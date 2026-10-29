@@ -1,0 +1,1709 @@
+
+<title>KlinikBot Demo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0f1715; --panel:#152220; --panel-2:#1b2b28; --line:#24403a; --text:#e8f0ee; --muted:#8fa7a1;
+    --accent:#2ee59d; --accent-2:#19c17f; --warn:#ffb648; --danger:#ff6b6b;
+    --chat-bg:#e9e3d9; --in:#ffffff; --out:#d9fdd3; --ink:#111b21; --ink-muted:#667781; --head:#0b7a5e;
+    --radius:16px;
+  }
+  :root{color-scheme:dark}
+  *{box-sizing:border-box} html,body{margin:0;height:100%}
+  body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:
+    radial-gradient(1200px 600px at 10% -10%, #163b33 0%, transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, #10302a 0%, transparent 55%), var(--bg);
+    color:var(--text); min-height:100%;}
+  a{color:var(--accent)}
+  .top{display:flex;align-items:center;justify-content:space-between;padding-block:18px;padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px));gap:16px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:-.02em;font-size:20px}
+  .brand .dot{width:12px;height:12px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 6px rgba(46,229,157,.15)}
+  .brand small{display:block;font-weight:500;color:var(--muted);font-size:12px;letter-spacing:0}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .btn{appearance:none;border:1px solid var(--line);background:var(--panel-2);color:var(--text);padding:9px 14px;border-radius:999px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
+  .btn:hover{border-color:var(--accent-2);transform:translateY(-1px)}
+  .btn.primary{background:var(--accent);color:#06281c;border-color:transparent}
+  .btn.ghost{background:transparent}
+  .btn.small{padding:6px 10px;font-size:12px}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+  .seg button{appearance:none;border:0;background:transparent;color:var(--muted);padding:8px 14px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+  .seg button.on{background:var(--accent);color:#06281c}
+
+  .wrap{display:grid;grid-template-columns:420px 1fr;gap:28px;padding-block:8px 40px;padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px));max-width:1380px;margin:0 auto}
+  .wrap>*{min-width:0}
+  @media (max-width:980px){.wrap{grid-template-columns:1fr;padding-block:8px 32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}.phone{width:100%;max-width:390px;height:min(720px,82vh);min-height:480px}.brand{font-size:17px}.top{padding-block:14px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}}
+
+  /* ---------- phone ---------- */
+  .phone{width:390px;max-width:100%;height:800px;margin:0 auto;border-radius:44px;background:#0a0d0c;padding:12px;box-shadow:0 40px 80px rgba(0,0,0,.55),0 0 0 1px #2a3a36 inset;position:relative}
+  .phone .screen{height:100%;border-radius:34px;overflow:hidden;display:flex;flex-direction:column;background:var(--chat-bg);position:relative}
+  .phone .notch{position:absolute;top:18px;left:50%;transform:translateX(-50%);width:120px;height:28px;background:#0a0d0c;border-radius:20px;z-index:5}
+  .chat-head{background:var(--head);color:#fff;padding:52px 14px 12px;display:flex;align-items:center;gap:12px;flex:0 0 auto}
+  .avatar{width:40px;height:40px;border-radius:50%;background:#fff;color:var(--head);display:grid;place-items:center;font-weight:800;font-size:16px}
+  .chat-head .name{font-weight:700;font-size:15px;line-height:1.1}
+  .chat-head .status{font-size:12px;opacity:.85}
+  .chat{flex:1;overflow:auto;padding:14px 12px;display:flex;flex-direction:column;gap:6px;background-image:
+    radial-gradient(circle at 20% 30%, rgba(0,0,0,.025) 0 2px, transparent 3px), radial-gradient(circle at 70% 70%, rgba(0,0,0,.025) 0 2px, transparent 3px);background-size:48px 48px, 64px 64px}
+  .chat::-webkit-scrollbar{width:6px}.chat::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:3px}
+  .msg{max-width:84%;padding:8px 10px 6px;border-radius:12px;font-size:14px;line-height:1.38;color:var(--ink);position:relative;box-shadow:0 1px 1px rgba(0,0,0,.08);white-space:pre-wrap;word-wrap:break-word;animation:pop .18s ease-out}
+  @keyframes pop{from{opacity:0;transform:translateY(6px) scale(.98)}to{opacity:1;transform:none}}
+  .msg.in{align-self:flex-start;background:var(--in);border-top-left-radius:4px}
+  .msg.out{align-self:flex-end;background:var(--out);border-top-right-radius:4px}
+  .msg .t{display:block;text-align:right;font-size:10.5px;color:var(--ink-muted);margin-top:3px}
+  .msg.in.reminder::before{content:"⏰ Automatic reminder";display:block;font-size:10.5px;font-weight:700;color:var(--head);margin-bottom:4px;letter-spacing:.02em}
+  .msg a{color:#027eb5;text-decoration:none}
+  .qr{align-self:flex-start;display:flex;flex-direction:column;gap:6px;width:84%}
+  .qr button{appearance:none;background:#fff;border:0;color:#027eb5;font:inherit;font-size:14px;font-weight:600;padding:10px;border-radius:10px;box-shadow:0 1px 1px rgba(0,0,0,.08);cursor:pointer}
+  .qr button:hover{background:#f3fbff}
+  .typing{align-self:flex-start;background:var(--in);border-radius:12px;padding:10px 12px;display:flex;gap:4px}
+  .typing i{width:7px;height:7px;background:#9aa6a3;border-radius:50%;animation:b 1s infinite}
+  .typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+  @keyframes b{0%,60%,100%{transform:translateY(0);opacity:.5}30%{transform:translateY(-4px);opacity:1}}
+  .compose{flex:0 0 auto;display:flex;gap:8px;padding:8px 10px 22px;background:#f0f2f5;align-items:center}
+  .compose input{flex:1;min-width:0;border:0;border-radius:999px;padding:11px 14px;font:inherit;font-size:14px;background:#fff;outline:none;color:var(--ink)}
+  .compose button{width:46px;height:46px;flex:0 0 46px;border-radius:50%;border:0;background:var(--head);color:#fff;font-size:18px;cursor:pointer;display:grid;place-items:center}
+
+  /* ---------- dashboard ---------- */
+  .dash{display:flex;flex-direction:column;gap:18px;min-width:0}
+  .card{background:linear-gradient(180deg,var(--panel),var(--panel-2));border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px}
+  .card h3{margin:0 0 10px;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .tile{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .tile .v{font-size:30px;font-weight:800;letter-spacing:-.03em;line-height:1}
+  .tile .l{font-size:12px;color:var(--muted);margin-top:6px}
+  .tile.accent .v{color:var(--accent)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{appearance:none;border:1px dashed var(--line);background:transparent;color:var(--text);padding:8px 12px;border-radius:999px;font:inherit;font-size:13px;cursor:pointer}
+  .chip:hover{border-style:solid;border-color:var(--accent-2);color:var(--accent)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{text-align:left;color:var(--muted);font-weight:600;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;padding:6px 8px;border-bottom:1px solid var(--line)}
+  td{padding:10px 8px;border-bottom:1px solid rgba(255,255,255,.05);vertical-align:middle}
+  tr:last-child td{border-bottom:0}
+  .pill{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.03em}
+  .pill.confirmed{background:rgba(46,229,157,.14);color:var(--accent)}
+  .pill.patient{background:rgba(46,229,157,.3);color:#c9ffe9}
+  .pill.cancelled{background:rgba(255,107,107,.14);color:var(--danger)}
+  .pill.completed{background:rgba(143,167,161,.18);color:var(--muted)}
+  .pill.no_show{background:rgba(255,182,72,.16);color:var(--warn)}
+  .row-actions{display:flex;gap:6px;flex-wrap:wrap}
+  .empty{color:var(--muted);font-size:13.5px;padding:14px 8px}
+  .live{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+  .live i{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1.6s infinite}
+  .live.off i{background:var(--muted);animation:none}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(46,229,157,.5)}100%{box-shadow:0 0 0 10px rgba(46,229,157,0)}}
+  .toasts{position:fixed;right:20px;bottom:20px;display:flex;flex-direction:column;gap:8px;z-index:50}
+  .toast{background:#0c1a16;border:1px solid var(--accent-2);color:var(--text);padding:12px 14px;border-radius:12px;font-size:13.5px;box-shadow:0 10px 30px rgba(0,0,0,.5);animation:pop .2s ease-out;max-width:340px}
+  .toast b{color:var(--accent)}
+  .why{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  @media (max-width:700px){.why,.tiles{grid-template-columns:1fr}}
+  .why div{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:14px;font-size:13.5px;line-height:1.45}
+  .why b{display:block;margin-bottom:4px;color:var(--accent)}
+  .foot{color:var(--muted);font-size:12px;padding-block:0 30px;padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px));max-width:1380px;margin:0 auto}
+</style>
+
+<div class="top">
+  <div class="brand"><span class="dot"></span><div>KlinikBot<small>Pembantu temujanji WhatsApp · WhatsApp booking assistant · 牙科预约助手</small></div></div>
+  <div class="controls">
+    <div class="seg" id="langSeg"><button data-lang="ms" class="on">BM</button><button data-lang="en">EN</button><button data-lang="zh">中文</button></div>
+    <button class="btn ghost" id="resetBtn">Reset demo</button>
+    <span class="live" id="aiPill" title="Free-text questions are answered by Claude using the clinic's own info"><i></i> <span id="aiLabel">AI answers: connecting…</span></span>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="screen">
+      <div class="chat-head">
+        <div class="avatar" id="avatar">KS</div>
+        <div><div class="name" id="clinicName">Klinik</div><div class="status" id="clinicStatus">online · balas dalam 1 saat</div></div>
+      </div>
+      <div class="chat" id="chat"></div>
+      <form class="compose" id="compose">
+        <input id="input" type="text" inputmode="text" enterkeyhint="send" autocomplete="off" autocapitalize="sentences" placeholder="Taip mesej… / Type a message… / 输入信息…">
+        <button type="submit" aria-label="Send">➤</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="dash">
+    <div class="card">
+      <h3>Try these — just tap</h3>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="card">
+      <h3>Clinic dashboard · <span id="dashName"></span></h3>
+      <div class="tiles">
+        <div class="tile accent"><div class="v" id="sToday">0</div><div class="l">Appointments today</div></div>
+        <div class="tile"><div class="v" id="sWeek">0</div><div class="l">This week</div></div>
+        <div class="tile"><div class="v" id="sConf">0</div><div class="l">Confirmed by patient</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Bookings — appear here the moment the bot confirms</h3>
+      <div id="bookings"><div class="empty">No bookings yet. Make one in the chat.</div></div>
+    </div>
+    <div class="card">
+      <h3>What the clinic gets</h3>
+      <div class="why">
+        <div><b>Answers like a human</b>Claude answers real questions — "scaling sakit tak?", "ada parking?", "洗牙会痛吗？" — in BM, English, Manglish or Chinese, using only the clinic's own info. Never diagnoses; passes to staff when unsure.</div>
+        <div><b>Zero missed enquiries</b>Replies in seconds, 24 hours a day, in three languages. Patients book without anyone picking up the phone.</div>
+        <div><b>Fewer no-shows</b>Automatic reminders 24h and 2h before, with one-tap confirm. Optional RM50 deposit via DuitNow to lock the slot.</div>
+        <div><b>No double-bookings</b>The bot only offers slots that are actually free. Reschedules and cancellations free the slot instantly.</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="foot">Demo clinic data is fictional. Works with the official WhatsApp Business Platform (Meta Cloud API). Built on Claude Code.</div>
+<div class="toasts" id="toasts"></div>
+
+<script>
+(function(){
+const __defs = {};
+const __cache = {};
+function __req(k){ if(__cache[k]) return __cache[k].exports; const m={exports:{}}; __cache[k]=m; __defs[k](m, m.exports); return m.exports; }
+__defs["./engine/scheduling"] = function(module, exports){
+// Date/time helpers in the clinic's timezone and slot availability.
+const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+// Returns {y,m,d,hh,mm,dow,dateStr,timeStr} for an instant in a timezone.
+function localParts(instant, tz) {
+  const fmt = new Intl.DateTimeFormat('en-GB', {
+    timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', weekday: 'short',
+  });
+  const parts = Object.fromEntries(fmt.formatToParts(instant).filter(p => p.type !== 'literal').map(p => [p.type, p.value]));
+  const dow = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(parts.weekday);
+  const hh = Number(parts.hour) === 24 ? 0 : Number(parts.hour);
+  return {
+    y: Number(parts.year), m: Number(parts.month), d: Number(parts.day), hh, mm: Number(parts.minute), dow,
+    dateStr: `${parts.year}-${parts.month}-${parts.day}`, timeStr: `${pad(hh)}:${parts.minute}`,
+  };
+}
+
+// Offset (minutes) of tz at a given instant.
+function tzOffsetMinutes(instant, tz) {
+  const p = localParts(instant, tz);
+  const asUTC = Date.UTC(p.y, p.m - 1, p.d, p.hh, p.mm);
+  return Math.round((asUTC - instant.getTime()) / 60000);
+}
+
+// Build an instant from a local date + time string in tz.
+function toInstant(dateStr, timeStr, tz) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const [hh, mm] = timeStr.split(':').map(Number);
+  const guess = new Date(Date.UTC(y, m - 1, d, hh, mm));
+  const off = tzOffsetMinutes(guess, tz);
+  return new Date(guess.getTime() - off * 60000);
+}
+
+function addDays(dateStr, n) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + n));
+  return `${dt.getUTCFullYear()}-${pad(dt.getUTCMonth() + 1)}-${pad(dt.getUTCDate())}`;
+}
+function dowOf(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+}
+function toMinutes(hhmm) { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; }
+function fromMinutes(min) { return `${pad(Math.floor(min / 60))}:${pad(min % 60)}`; }
+
+function todayStr(clinic, nowInstant = new Date()) { return localParts(nowInstant, clinic.timezone).dateStr; }
+
+function isOpen(clinic, dateStr) {
+  const h = clinic.hours[DAY_KEYS[dowOf(dateStr)]];
+  return Array.isArray(h) && h.length === 2;
+}
+
+// All slots for a date (ignoring bookings).
+function rawSlots(clinic, dateStr) {
+  const h = clinic.hours[DAY_KEYS[dowOf(dateStr)]];
+  if (!h) return [];
+  const [open, close] = h.map(toMinutes);
+  const lunch = clinic.lunch ? clinic.lunch.map(toMinutes) : null;
+  const out = [];
+  for (let t = open; t + clinic.slot_minutes <= close; t += clinic.slot_minutes) {
+    if (lunch && t >= lunch[0] && t < lunch[1]) continue;
+    out.push(fromMinutes(t));
+  }
+  return out;
+}
+
+// Available slots for a date & service duration, given existing bookings and the current time.
+function availableSlots(clinic, dateStr, durationMin, bookings, nowInstant = new Date()) {
+  const slots = rawSlots(clinic, dateStr);
+  if (!slots.length) return [];
+  const h = clinic.hours[DAY_KEYS[dowOf(dateStr)]];
+  const close = toMinutes(h[1]);
+  const lunch = clinic.lunch ? clinic.lunch.map(toMinutes) : null;
+  const busy = bookings.filter(b => b.date === dateStr && b.status === 'confirmed')
+    .map(b => [toMinutes(b.time), toMinutes(b.time) + b.duration]);
+  const nowP = localParts(nowInstant, clinic.timezone);
+  const minStart = nowP.dateStr === dateStr ? toMinutes(nowP.timeStr) + (clinic.min_lead_minutes || 0) : -1;
+  return slots.filter(s => {
+    const st = toMinutes(s), en = st + durationMin;
+    if (en > close) return false;
+    if (lunch && st < lunch[1] && en > lunch[0]) return false;
+    if (st < minStart) return false;
+    return !busy.some(([bs, be]) => st < be && en > bs);
+  });
+}
+
+// Next N open dates from (and including) a start date.
+function nextOpenDates(clinic, fromDateStr, n) {
+  const out = [];
+  let d = fromDateStr;
+  for (let i = 0; i < (clinic.max_days_ahead || 14) && out.length < n; i++) {
+    if (isOpen(clinic, d)) out.push(d);
+    d = addDays(d, 1);
+  }
+  return out;
+}
+
+function withinBookingWindow(clinic, dateStr, nowInstant = new Date()) {
+  const t = todayStr(clinic, nowInstant);
+  return dateStr >= t && dateStr <= addDays(t, clinic.max_days_ahead || 14);
+}
+
+function startOfWeek(dateStr) { // Monday
+  const dow = dowOf(dateStr);
+  return addDays(dateStr, dow === 0 ? -6 : 1 - dow);
+}
+
+module.exports = {
+  DAY_KEYS, localParts, toInstant, addDays, dowOf, toMinutes, fromMinutes, todayStr, isOpen,
+  rawSlots, availableSlots, nextOpenDates, withinBookingWindow, startOfWeek, pad,
+};
+
+};
+__defs["./engine/parser"] = function(module, exports){
+// Rule-based understanding for Malay (BM), English and Chinese (中文) messages.
+// Handles: language detection, intents, dates ("esok", "next monday", "30/10"), times ("3pm", "pukul 3 petang"), services, yes/no.
+const { addDays, dowOf, pad } = __req("./engine/scheduling");
+
+const norm = s => (s || '').toLowerCase().replace(/[’']/g, '').replace(/\s+/g, ' ').trim();
+const CJK = /[\u3400-\u4dbf\u4e00-\u9fff\uff01-\uff5e\u3000-\u303f]/;
+const hasCJK = s => CJK.test(s || '');
+// Full-width digits → ASCII; Chinese numerals (一..十二) → digits where they stand alone as a number
+const CN_NUM = { '零': 0, '〇': 0, '一': 1, '二': 2, '两': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10 };
+function cnToDigits(s) {
+  return (s || '').replace(/[０-９]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFF10 + 48))
+    .replace(/十([一二三四五六七八九])/g, (m, a) => String(10 + CN_NUM[a]))
+    .replace(/([一二三四五六七八九])十/g, (m, a) => String(CN_NUM[a] * 10))
+    .replace(/十/g, '10')
+    .replace(/[零〇一二两三四五六七八九]/g, ch => String(CN_NUM[ch]));
+}
+
+// ---------- language ----------
+const MS_WORDS = ['saya', 'nak', 'boleh', 'tempah', 'temujanji', 'pukul', 'petang', 'pagi', 'esok', 'lusa', 'hari', 'ini', 'tak', 'tidak', 'ya', 'macam', 'mana', 'bila', 'apa', 'waktu', 'buka', 'tutup', 'alamat', 'gigi', 'klinik', 'batal', 'tukar', 'ubah', 'jam', 'minggu', 'depan', 'isnin', 'selasa', 'rabu', 'khamis', 'jumaat', 'sabtu', 'ahad', 'malam', 'untuk', 'dengan', 'ada', 'kosong', 'sakit', 'nama', 'terima', 'kasih', 'assalamualaikum', 'salam', 'okey', 'ok', 'kemas', 'kini', 'cakap', 'staf', 'doktor', 'harga', 'berapa'];
+const EN_WORDS = ['i', 'want', 'book', 'appointment', 'tomorrow', 'today', 'morning', 'afternoon', 'evening', 'can', 'please', 'what', 'when', 'where', 'time', 'open', 'close', 'address', 'cancel', 'reschedule', 'change', 'next', 'week', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'yes', 'no', 'the', 'is', 'my', 'name', 'thanks', 'hello', 'hi', 'staff', 'doctor', 'price', 'how', 'much', 'tooth', 'teeth', 'pain', 'slot', 'available'];
+
+function detectLanguage(text) {
+  const t = norm(text);
+  if (/\b(english|in english|eng)\b/.test(t)) return 'en';
+  if (/\b(bm|bahasa|melayu|malay)\b/.test(t)) return 'ms';
+  if (/中文|华语|华文|chinese|mandarin|汉语/.test(t)) return 'zh';
+  if (hasCJK(t)) return 'zh';
+  const words = t.split(/[^a-z]+/).filter(Boolean);
+  let ms = 0, en = 0;
+  for (const w of words) { if (MS_WORDS.includes(w)) ms++; if (EN_WORDS.includes(w)) en++; }
+  if (ms === 0 && en === 0) return null;
+  if (ms > en) return 'ms';
+  if (en > ms) return 'en';
+  return null;
+}
+
+// ---------- intents ----------
+const INTENTS = [
+  ['cancel',     /\b(cancel|batal|batalkan|tak jadi|x jadi|nak batal)\b/],
+  ['reschedule', /\b(reschedule|re-schedule|tukar|ubah|anjak|move|change (my|the) (appointment|booking|time|date)|postpone|tangguh)\b/],
+  ['hours',      /\b(hours?|opening|open|close|closing|waktu|buka|tutup|operating)\b/],
+  ['location',   /\b(location|address|where|alamat|lokasi|mana|waze|map|direction)\b/],
+  ['price',      /\b(price|harga|berapa|how much|cost|fee|bayar|charge)\b/],
+  ['staff',      /\b(staff|human|person|operator|doctor|doktor|cakap dengan|talk to|speak to|call me|telefon|nurse|receptionist|manusia|orang)\b/],
+  ['book',       /\b(book|booking|appointment|appt|tempah|tempahan|temujanji|temu janji|slot|reserve|jumpa doktor|nak datang|schedule)\b/],
+  ['greeting',   /^(hi|hello|hey|helo|hai|assalamualaikum|salam|selamat (pagi|petang|malam|tengahari)|good (morning|afternoon|evening)|yo|start|menu|mula|help|tolong)\b/],
+  ['thanks',     /\b(thanks?|thank you|terima kasih|tq|ty|tks)\b/],
+];
+
+// Chinese has no word boundaries, so these are plain substring patterns, checked first when the text has CJK.
+const INTENTS_ZH = [
+  ['cancel',     /取消|不来了|不去了|不要了|作废/],
+  ['reschedule', /改时间|改期|改约|换时间|换个时间|更改|推迟|延后|改一下|换一天|改天/],
+  ['staff',      /真人|人工|客服|找人|前台|护士|打电话|联系你们|跟人说|跟人讲|找医生|医生在吗/],
+  ['hours',      /营业时间|几点开|几点关|开门|关门|什么时候开|开到几点|营业/],
+  ['location',   /地址|在哪|怎么去|怎么走|位置|地点|地图|导航/],
+  ['price',      /价格|多少钱|收费|费用|价钱|几钱|贵不贵|要多少/],
+  ['book',       /预约|预定|预订|订位|挂号|排期|约个|约时间|想来|要来|看牙|看医生|订一个|约一下|做一个/],
+  ['greeting',   /^(你好|您好|嗨|哈喽|哈啰|早上好|早安|下午好|晚上好|晚安|开始|菜单|在吗|hi|hello)/],
+  ['thanks',     /谢谢|多谢|感谢|谢了|辛苦了/],
+];
+
+function detectIntent(text) {
+  const t = norm(text);
+  if (hasCJK(t)) { for (const [name, re] of INTENTS_ZH) if (re.test(t)) return name; }
+  for (const [name, re] of INTENTS) if (re.test(t)) return name;
+  return null;
+}
+
+// ---------- yes / no ----------
+function isYes(text) {
+  const t = norm(text);
+  if (hasCJK(t)) return /^(是|是的|好|好的|好啊|可以|可以的|确认|确定|对|对的|没错|行|嗯|要|要的|ok|好的呀|没问题|正确)(。|！|!|\s|$)/.test(t) || /确认|没错|正确|没问题/.test(t);
+  return /^(y|ya|yes|yup|yeah|ok|okay|okey|sure|confirm|sah|sahkan|betul|boleh|baik|setuju|1|✅|👍)\b/.test(t) || /\b(confirm|sahkan|ya betul|yes please|ok confirm)\b/.test(t);
+}
+function isNo(text) {
+  const t = norm(text);
+  if (hasCJK(t)) return /^(不|不是|不要|不对|不行|错|错了|否|取消|不用|不需要|不可以)(。|！|!|\s|$)/.test(t) || /^(不|不对|错了)/.test(t);
+  return /^(n|no|nope|tak|tidak|x|bukan|salah|cancel|batal|jangan|2|❌)\b/.test(t);
+}
+
+function pickNumber(text, max) {
+  // "2", "no 2", "第2个", "2号", "选2", "二"
+  const t = cnToDigits(norm(text)).replace(/^(第|选|选择|要|我要|option|pilihan|nombor|number|no\.?)\s*/, '').replace(/\s*(个|号|項|项|吧|。|\.|\))\s*$/, '');
+  const m = t.match(/^\s*(\d{1,2})\s*$/);
+  if (!m) return null;
+  const n = Number(m[1]);
+  return n >= 1 && n <= max ? n : null;
+}
+
+// ---------- dates ----------
+const DOW_MS = { ahad: 0, isnin: 1, selasa: 2, rabu: 3, khamis: 4, jumaat: 5, sabtu: 6 };
+const DOW_EN = { sunday: 0, sun: 0, monday: 1, mon: 1, tuesday: 2, tue: 2, tues: 2, wednesday: 3, wed: 3, thursday: 4, thu: 4, thur: 4, thurs: 4, friday: 5, fri: 5, saturday: 6, sat: 6 };
+const MONTHS = { jan: 1, january: 1, januari: 1, feb: 2, february: 2, februari: 2, mar: 3, march: 3, mac: 3, apr: 4, april: 4, may: 5, mei: 5, jun: 6, june: 6, jul: 7, july: 7, julai: 7, aug: 8, august: 8, ogos: 8, ogo: 8, sep: 9, sept: 9, september: 9, oct: 10, october: 10, okt: 10, oktober: 10, nov: 11, november: 11, dec: 12, december: 12, dis: 12, disember: 12 };
+
+// Returns 'YYYY-MM-DD' or null. todayStr is the clinic-local date.
+const DOW_ZH = { '日': 0, '天': 0, '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6 };
+function parseDateZh(text, todayStr) {
+  const t = text;
+  if (/大后天|大後天/.test(t)) return addDays(todayStr, 3);
+  if (/后天|後天/.test(t)) return addDays(todayStr, 2);
+  if (/明天|明日|听日/.test(t)) return addDays(todayStr, 1);
+  if (/今天|今日|现在|現在/.test(t)) return todayStr;
+  // 10月30日 / 10月30号 / 十月三十号
+  let m = cnToDigits(t).match(/(\d{1,2})\s*月\s*(\d{1,2})\s*(日|号|號)?/);
+  if (m) {
+    const y = Number(todayStr.slice(0, 4));
+    const ds = `${y}-${pad(Number(m[1]))}-${pad(Number(m[2]))}`;
+    if (validDate(ds)) return rollForward(ds, todayStr, true);
+  }
+  // 30号 (this month, or next if passed)
+  m = cnToDigits(t).match(/(?:^|[^\d月])(\d{1,2})\s*(号|號|日)(?!\s*[月])/);
+  if (m && !/星期|周|礼拜|禮拜/.test(t)) {
+    const [y, mo] = todayStr.split('-').map(Number);
+    let ds = `${y}-${pad(mo)}-${pad(Number(m[1]))}`;
+    if (validDate(ds) && ds >= todayStr) return ds;
+    const nm = mo === 12 ? `${y + 1}-01` : `${y}-${pad(mo + 1)}`;
+    ds = `${nm}-${pad(Number(m[1]))}`;
+    if (validDate(ds)) return ds;
+  }
+  // 星期一 / 周一 / 礼拜一 / 週一, optional 下 (next week) / 这 (this)
+  m = t.match(/(下|这|這|本)?\s*(星期|周|週|礼拜|禮拜)\s*([一二三四五六日天])/);
+  if (m) {
+    const dow = DOW_ZH[m[3]];
+    const todayDow = dowOf(todayStr);
+    let delta = (dow - todayDow + 7) % 7;               // 星期三 / 这周三 = the coming Wednesday
+    if (m[1] === '下') {                                 // 下周三 = Wednesday of NEXT calendar week (Mon–Sun)
+      const toNextMonday = ((8 - todayDow) % 7) || 7;
+      delta = toNextMonday + ((dow === 0 ? 7 : dow) - 1);
+    }
+    return addDays(todayStr, delta);
+  }
+  return null;
+}
+
+function parseDate(text, todayStr) {
+  if (hasCJK(text)) { const z = parseDateZh(text, todayStr); if (z) return z; }
+  const t = norm(text);
+  if (/\b(today|hari ini|harini|hari ni|sekarang|now)\b/.test(t)) return todayStr;
+  if (/\b(day after tomorrow|lusa)\b/.test(t)) return addDays(todayStr, 2);
+  if (/\b(tomorrow|tmr|tmrw|tomoro|esok|bsk|esk)\b/.test(t)) return addDays(todayStr, 1);
+
+  // numeric: 30/10, 30-10, 30/10/2026, 30.10 (but not "3.30pm")
+  for (const m of t.matchAll(/\b(\d{1,2})[\/\-.](\d{1,2})(?:[\/\-.](\d{2,4}))?\b(?!\s*(?:am|pm|pagi|petang|malam))/g)) {
+    const d = Number(m[1]), mo = Number(m[2]);
+    let y = m[3] ? Number(m[3]) : Number(todayStr.slice(0, 4));
+    if (y < 100) y += 2000;
+    const ds = `${y}-${pad(mo)}-${pad(d)}`;
+    if (validDate(ds)) return rollForward(ds, todayStr, !m[3]);
+  }
+  // "30 oct", "30 oktober", "oct 30", "30hb okt"
+  const m = t.match(/\b(\d{1,2})\s*(?:hb|th|st|nd|rd)?\s+([a-z]{3,9})\b/) || t.match(/\b([a-z]{3,9})\s+(\d{1,2})(?:st|nd|rd|th)?\b/);
+  if (m) {
+    const a = m[1], b = m[2];
+    const d = /^\d/.test(a) ? Number(a) : Number(b);
+    const mon = MONTHS[/^\d/.test(a) ? b : a];
+    if (mon) {
+      const y = Number(todayStr.slice(0, 4));
+      const ds = `${y}-${pad(mon)}-${pad(d)}`;
+      if (validDate(ds)) return rollForward(ds, todayStr, true);
+    }
+  }
+  // weekday, optional "next"/"depan"/"this"
+  const words = t.split(/[^a-z]+/).filter(Boolean);
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i];
+    const dow = DOW_MS[w] ?? DOW_EN[w];
+    if (dow === undefined) continue;
+    // "next monday" / "isnin depan" = the coming Monday (never today); "monday next week" / "isnin minggu depan" = a week later
+    const isNext = words[i - 1] === 'next' || words[i + 1] === 'depan' || words[i + 1] === 'hadapan';
+    const todayDow = dowOf(todayStr);
+    let delta = (dow - todayDow + 7) % 7;
+    if (isNext && delta === 0) delta = 7;
+    if (/\b(minggu depan|next week|minggu hadapan)\b/.test(t)) delta += 7;
+    return addDays(todayStr, delta);
+  }
+  return null;
+}
+function validDate(ds) { const [y, m, d] = ds.split('-').map(Number); const dt = new Date(Date.UTC(y, m - 1, d)); return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d; }
+function rollForward(ds, todayStr, noYearGiven) {
+  if (noYearGiven && ds < todayStr) { const [y, m, d] = ds.split('-'); return `${Number(y) + 1}-${m}-${d}`; }
+  return ds;
+}
+
+// ---------- times ----------
+// Returns { time: 'HH:MM' } or { period: 'morning'|'afternoon'|'evening' } or null.
+function parseTimeZh(text) {
+  const t = cnToDigits(text);
+  const period = /早上|早晨|上午|早点|早一点/.test(t) ? 'morning'
+    : /中午|午饭|午餐/.test(t) ? 'midday'
+    : /下午|午后/.test(t) ? 'xiawu'
+    : /傍晚|晚上|晚间|夜晚|夜里/.test(t) ? 'evening' : null;
+  // 3点 / 3点半 / 3点30分 / 3:30 / 15点 / 下午3点 / 3pm
+  const m = t.match(/(\d{1,2})\s*(?:点|點|时|時|:|：)\s*(半|\d{1,2})?\s*(分)?\s*(am|pm)?/i);
+  if (m) {
+    let h = Number(m[1]); const mm = m[2] === '半' ? 30 : Number(m[2] || 0);
+    if (h <= 24 && mm <= 59) {
+      const suf = (m[4] || '').toLowerCase();
+      if ((suf === 'pm' || period === 'xiawu' || period === 'afternoon' || period === 'evening' || period === 'midday') && h < 12) h += 12;
+      else if (suf === 'am' && h === 12) h = 0;
+      else if (!suf && !period && h <= 7) h += 12; // "3点" at a clinic → 3pm
+      return { time: `${pad(h)}:${pad(mm)}` };
+    }
+  }
+  const m2 = t.match(/(\d{1,2})\s*(am|pm)\b/i);
+  if (m2) { let h = Number(m2[1]); if (m2[2].toLowerCase() === 'pm' && h < 12) h += 12; if (m2[2].toLowerCase() === 'am' && h === 12) h = 0; return { time: `${pad(h)}:00` }; }
+  return period ? { period } : null;
+}
+
+function parseTime(text) {
+  if (hasCJK(text)) { const z = parseTimeZh(text); if (z) return z; }
+  const t = norm(text);
+  const period = /\b(morning|pagi)\b/.test(t) ? 'morning'
+    : /\b(tengah ?hari|tgh hari|noon|lunch|lepas lunch|midday)\b/.test(t) ? 'midday'
+    : /\b(petang)\b/.test(t) ? 'petang'
+    : /\b(afternoon)\b/.test(t) ? 'afternoon'
+    : /\b(evening|night|malam)\b/.test(t) ? 'evening' : null;
+
+  // 3pm, 3 pm, 3.30pm, 3:30 pm, 15:00, pukul 3, jam 3.30, 3 petang — skip numbers that are part of a date (28/10)
+  for (const m of t.matchAll(/(pukul|jam|at|pkl)?\s*\b(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm|a\.m\.|p\.m\.|pagi|petang|malam|tengahari|tgh hari)?\b/g)) {
+    const after = t.slice(m.index + m[0].length, m.index + m[0].length + 1);
+    const before = t.slice(Math.max(0, m.index - 1), m.index);
+    if (/[\/\-]/.test(after) || /[\/\-]/.test(before)) continue; // part of a date
+    const hasMinutes = m[3] !== undefined, suf = m[4] || '', prefixed = !!m[1];
+    if (!hasMinutes && !suf && !prefixed) continue;
+    let h = Number(m[2]); const mm = Number(m[3] || 0);
+    if (h > 24 || mm > 59) continue;
+    if (/pm|petang|malam|tgh|tengah/.test(suf) && h < 12) h += 12;
+    else if (/am|pagi/.test(suf) && h === 12) h = 0;
+    else if (!suf && h <= 7) h += 12; // "pukul 3" at a clinic almost always means 3pm
+    else if (!suf && (period === 'afternoon' || period === 'petang' || period === 'evening' || period === 'midday') && h < 12) h += 12;
+    return { time: `${pad(h)}:${pad(mm)}` };
+  }
+  return period ? { period } : null;
+}
+
+function periodFilter(period) {
+  return s => {
+    const h = Number(s.slice(0, 2));
+    if (period === 'morning') return h < 12;
+    if (period === 'midday') return h >= 12 && h < 14;
+    if (period === 'afternoon') return h >= 12 && h < 17;
+    if (period === 'petang') return h >= 14 && h < 19;
+    if (period === 'xiawu') return h >= 13 && h < 18;   // 下午: 1pm–6pm (12 is 中午)
+    if (period === 'evening') return h >= 17;
+    return true;
+  };
+}
+
+// ---------- services ----------
+const SERVICE_SYNONYMS = {
+  checkup: ['checkup', 'check up', 'check-up', 'scaling', 'cleaning', 'clean', 'polish', 'cuci gigi', 'pemeriksaan', 'periksa', 'tartar', 'karang gigi', 'routine', 'general'],
+  filling: ['filling', 'fill', 'tampal', 'tampalan', 'lubang', 'cavity', 'hole', 'rosak'],
+  extraction: ['extraction', 'extract', 'remove', 'pull', 'cabut', 'buang gigi', 'wisdom', 'geraham bongsu'],
+  whitening: ['whitening', 'whiten', 'putih', 'pemutihan', 'bleach'],
+  braces: ['braces', 'brace', 'pendakap', 'ortho', 'orthodontic', 'aligner', 'invisalign', 'retainer'],
+};
+const SERVICE_SYNONYMS_ZH = {
+  checkup: ['洗牙', '洁牙', '检查', '檢查', '牙石', '牙结石', '牙垢', '清洁', '定期检查', '例行'],
+  filling: ['补牙', '補牙', '蛀牙', '补一下', '填牙', '牙洞', '烂牙', '爛牙'],
+  extraction: ['拔牙', '拔掉', '拔智齿', '智齿', '智慧牙', '拔'],
+  whitening: ['美白', '漂白', '牙齿美白', '牙齒美白', '变白', '洗白'],
+  braces: ['牙套', '矫正', '矯正', '箍牙', '隐形牙套', '隱形', '矫牙', '正畸', '牙齿矫正'],
+};
+function matchService(text, services) {
+  const t = norm(text);
+  const n = pickNumber(text, services.length);
+  if (n) return services[n - 1];
+  if (hasCJK(t)) {
+    for (const s of services) {
+      const syns = SERVICE_SYNONYMS_ZH[s.id] || [];
+      if ((s.zh && t.includes(norm(s.zh))) || syns.some(x => t.includes(x))) return s;
+    }
+    if (/牙疼|牙痛|痛|疼|酸|敏感|出血|流血|肿|腫/.test(t)) return services.find(s => s.id === 'checkup') || null;
+  }
+  for (const s of services) {
+    const syns = SERVICE_SYNONYMS[s.id] || [];
+    const names = [s.ms, s.en].map(norm);
+    if (names.some(x => t.includes(x)) || syns.some(x => t.includes(x))) return s;
+  }
+  // generic "pain" -> checkup
+  if (/\b(sakit|pain|hurt|ache|sensitif|sensitive|bleed|berdarah|bengkak|swollen)\b/.test(t)) return services.find(s => s.id === 'checkup') || null;
+  return null;
+}
+
+// ---------- names ----------
+function extractName(text) {
+  const raw = (text || '').trim();
+  if (hasCJK(raw)) {
+    // 我叫陈美玲 / 我是王小明 / 名字是林志强 / 陈美玲 — Chinese names are 2–4 characters; also accept Latin names mixed in
+    const m = raw.match(/(?:我叫|我是|名字是|名字|姓名|叫我|叫)\s*[:：]?\s*([\u4e00-\u9fff]{2,5})/) || raw.match(/^([\u4e00-\u9fff]{2,4})(?:[。！!，,]|$)/);
+    if (m && !/^(你好|谢谢|可以|好的|不是|取消|预约|洗牙|补牙|拔牙|美白|牙套|医生)$/.test(m[1])) return m[1];
+    const latin = raw.match(/([A-Za-z][A-Za-z@' .\-]{1,39})/);
+    if (latin) return latin[1].trim().split(' ').map(w => w.length > 1 && w === w.toLowerCase() ? w[0].toUpperCase() + w.slice(1) : w).join(' ');
+    return null;
+  }
+  const m = raw.match(/(?:nama saya|name is|saya|i am|i'm|im|this is|ini)\s+([A-Za-z@' .\-]{2,40})$/i);
+  const cand = (m ? m[1] : raw).replace(/[^A-Za-z@' .\-]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (cand.length < 2 || cand.length > 40) return null;
+  if (/^(ok|ya|yes|no|tak|hi|hello|book|tempah)$/i.test(cand)) return null;
+  return cand.split(' ').map(w => w.length > 1 && w === w.toLowerCase() ? w[0].toUpperCase() + w.slice(1) : w).join(' ');
+}
+
+module.exports = { norm, hasCJK, cnToDigits, detectLanguage, detectIntent, isYes, isNo, pickNumber, parseDate, parseTime, periodFilter, matchService, extractName };
+
+};
+__defs["./engine/messages"] = function(module, exports){
+// All bot copy in Malay (ms) and English (en). Keep it short — it's WhatsApp.
+const { dowOf } = __req("./engine/scheduling");
+
+const DOW = {
+  ms: ['Ahad', 'Isnin', 'Selasa', 'Rabu', 'Khamis', 'Jumaat', 'Sabtu'],
+  en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+  zh: ['周日', '周一', '周二', '周三', '周四', '周五', '周六'],
+};
+const MON = {
+  ms: ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogos', 'Sep', 'Okt', 'Nov', 'Dis'],
+  en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+};
+
+function fmtDate(dateStr, lang, todayStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dow = DOW[lang][dowOf(dateStr)];
+  const base = lang === 'zh' ? `${m}月${d}日 ${dow}` : `${dow}, ${d} ${MON[lang][m - 1]}`;
+  if (todayStr) {
+    if (dateStr === todayStr) return lang === 'ms' ? `Hari ini (${base})` : lang === 'zh' ? `今天（${base}）` : `Today (${base})`;
+    const [ty, tm, td] = todayStr.split('-').map(Number);
+    const diff = Math.round((Date.UTC(y, m - 1, d) - Date.UTC(ty, tm - 1, td)) / 86400000);
+    if (diff === 1) return lang === 'ms' ? `Esok (${base})` : lang === 'zh' ? `明天（${base}）` : `Tomorrow (${base})`;
+  }
+  return base;
+}
+function fmtTime(hhmm, lang) {
+  const [h, m] = hhmm.split(':').map(Number);
+  if (lang === 'zh') {
+    const period = h < 12 ? '上午' : h === 12 ? '中午' : h < 18 ? '下午' : '晚上';
+    const h12 = h % 12 === 0 ? 12 : h % 12;
+    return `${period}${h12}点${m === 30 ? '半' : m ? String(m).padStart(2, '0') + '分' : ''}`;
+  }
+  const suffix = h >= 12 ? 'pm' : 'am';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return m ? `${h12}.${String(m).padStart(2, '0')}${suffix}` : `${h12}${suffix}`;
+}
+function svcName(s, lang) { return s[lang] || s.en; }
+function price(s, lang) {
+  if (!s.price_from) return lang === 'ms' ? 'percuma' : lang === 'zh' ? '免费' : 'free';
+  return lang === 'ms' ? `dari RM${s.price_from}` : lang === 'zh' ? `RM${s.price_from}起` : `from RM${s.price_from}`;
+}
+
+const M = {
+  ms: {
+    greeting: (c, name) => `${name ? `Hai ${name}! ` : 'Hai! '}Selamat datang ke *${c.name.ms}* 🦷\n\nSaya pembantu tempahan klinik. Apa yang boleh saya bantu?`,
+    menu: () => `Pilih satu:\n\n*1* – Tempah temujanji\n*2* – Tukar / batal temujanji\n*3* – Waktu operasi & lokasi\n*4* – Cakap dengan staf\n\n_Taip nombor atau terus beritahu, contoh: "nak scaling esok petang"_`,
+    menuButtons: () => [{ id: 'book', title: 'Tempah' }, { id: 'manage', title: 'Tukar / Batal' }, { id: 'info', title: 'Waktu & Lokasi' }],
+    askService: (c) => `Rawatan apa yang anda perlukan?\n\n${c.services.map((s, i) => `*${i + 1}* – ${svcName(s, 'ms')} (${price(s, 'ms')})`).join('\n')}`,
+    askDate: () => `Bila anda nak datang? Boleh taip contoh: *esok*, *Sabtu*, atau *30/10*.`,
+    askDateWithOptions: (dates, today) => `Bila anda nak datang?\n\n${dates.map((d, i) => `*${i + 1}* – ${fmtDate(d, 'ms', today)}`).join('\n')}\n\n_Atau taip tarikh lain, contoh: "Sabtu depan" atau "5/11"_`,
+    closedOn: (d, today, alts) => `Maaf, klinik tutup pada ${fmtDate(d, 'ms', today)}. Hari terdekat yang ada:\n\n${alts.map((x, i) => `*${i + 1}* – ${fmtDate(x, 'ms', today)}`).join('\n')}`,
+    noSlots: (d, today, alts) => `Maaf, ${fmtDate(d, 'ms', today)} sudah penuh. Hari terdekat yang ada:\n\n${alts.map((x, i) => `*${i + 1}* – ${fmtDate(x, 'ms', today)}`).join('\n')}`,
+    tooFar: (max) => `Maaf, tempahan hanya boleh dibuat sehingga ${max} hari ke hadapan. Sila pilih tarikh lain.`,
+    pastDate: () => `Tarikh itu sudah berlalu. Sila pilih tarikh lain, contoh: *esok* atau *Sabtu*.`,
+    askTime: (d, today, slots) => `Slot kosong pada ${fmtDate(d, 'ms', today)}:\n\n${slots.map((s, i) => `*${i + 1}* – ${fmtTime(s, 'ms')}`).join('\n')}\n\n_Taip nombor, atau contoh "petang" / "3pm"_`,
+    timeTaken: (t, slots) => `Maaf, ${fmtTime(t, 'ms')} sudah diambil. Yang terdekat:\n\n${slots.map((s, i) => `*${i + 1}* – ${fmtTime(s, 'ms')}`).join('\n')}`,
+    noSlotsPeriod: (slots) => `Tiada slot pada waktu itu. Slot lain yang ada:\n\n${slots.map((s, i) => `*${i + 1}* – ${fmtTime(s, 'ms')}`).join('\n')}`,
+    askName: () => `Boleh saya tahu nama penuh anda?`,
+    confirm: (c, b, s, today) => `Sila semak tempahan anda:\n\n👤 *${b.name}*\n🦷 ${svcName(s, 'ms')}\n📅 ${fmtDate(b.date, 'ms', today)}\n🕒 ${fmtTime(b.time, 'ms')}\n📍 ${c.short_name}, ${c.address.split(',').slice(-2).join(',').trim()}\n\nBetul? Balas *YA* untuk sahkan atau *TAK* untuk ubah.`,
+    confirmButtons: () => [{ id: 'yes', title: 'Ya, sahkan ✅' }, { id: 'no', title: 'Ubah' }],
+    booked: (c, b, s, today) => `✅ *Tempahan disahkan!*\n\n📅 ${fmtDate(b.date, 'ms', today)} jam ${fmtTime(b.time, 'ms')}\n🦷 ${svcName(s, 'ms')}\n📍 ${c.address}\n🗺️ Waze: ${c.waze_url}\n\nNo. rujukan: *#${b.id}*\n\nSaya akan hantar peringatan sehari sebelum. Jika perlu tukar, balas "tukar" bila-bila masa.`,
+    deposit: (c) => `💳 Untuk kunci slot anda, sila buat deposit *RM${c.deposit.amount}* melalui DuitNow:\n${c.deposit.duitnow_url || '(QR DuitNow klinik)'}\n\n${c.deposit.note.ms} Hantar screenshot resit di sini selepas bayar ya.`,
+    notConfirmed: () => `Baik, tempahan belum disahkan. Apa yang anda nak ubah?\n\n*1* – Rawatan\n*2* – Tarikh\n*3* – Masa\n*4* – Nama\n*5* – Batal sahaja`,
+    noUpcoming: () => `Saya tak jumpa temujanji akan datang untuk nombor ini. Nak buat tempahan baru? Balas *1*.`,
+    yourBookings: (bs, services, today) => `Temujanji anda:\n\n${bs.map((b, i) => `*${i + 1}* – ${fmtDate(b.date, 'ms', today)} ${fmtTime(b.time, 'ms')} · ${svcName(services.find(s => s.id === b.service_id) || {}, 'ms')} (#${b.id})`).join('\n')}\n\nYang mana?`,
+    manageWhat: (b, s, today) => `Temujanji #${b.id}: ${fmtDate(b.date, 'ms', today)} ${fmtTime(b.time, 'ms')} · ${svcName(s, 'ms')}\n\n*1* – Tukar tarikh/masa\n*2* – Batal temujanji\n*3* – Kekal, tiada perubahan`,
+    cancelConfirm: (b, today) => `Batal temujanji pada ${fmtDate(b.date, 'ms', today)} ${fmtTime(b.time, 'ms')}? Balas *YA* untuk batal.`,
+    cancelled: (b) => `Temujanji #${b.id} telah dibatalkan. Jika nak tempah semula, balas *1* bila-bila masa. Terima kasih! 🙏`,
+    rescheduled: (c, b, s, today) => `✅ *Temujanji ditukar!*\n\n📅 ${fmtDate(b.date, 'ms', today)} jam ${fmtTime(b.time, 'ms')}\n🦷 ${svcName(s, 'ms')}\n📍 ${c.short_name}\n\nNo. rujukan: *#${b.id}*. Jumpa nanti!`,
+    info: (c) => `📍 *${c.name.ms}*\n${c.address}\n🗺️ Waze: ${c.waze_url}\n📞 ${c.phone}\n\n🕒 *Waktu operasi*\n${hoursText(c, 'ms')}\n\nNak tempah temujanji? Balas *1*.`,
+    priceList: (c) => `💰 *Anggaran harga*\n${c.services.map(s => `• ${svcName(s, 'ms')} – ${price(s, 'ms')}`).join('\n')}\n\n_Harga sebenar bergantung pada pemeriksaan doktor._\n\nNak tempah? Balas *1*.`,
+    handoff: (c) => `Baik, saya maklumkan staf klinik sekarang. Mereka akan balas di sini sebentar lagi (waktu operasi). Terima kasih kerana menunggu 🙏`,
+    handoffActive: () => `Staf kami akan balas sebentar lagi. Jika nak kembali ke menu automatik, taip *menu*.`,
+    thanks: () => `Sama-sama! Jumpa nanti 😊`,
+    fallback: () => `Maaf, saya tak faham. Taip *menu* untuk pilihan, atau terus beritahu, contoh: "nak scaling esok petang".`,
+    reminder: (c, b, s, hrs, today) => hrs >= 12
+      ? `⏰ *Peringatan temujanji esok*\n\nHai ${b.name || ''}, jumpa anda esok di ${c.short_name}:\n📅 ${fmtDate(b.date, 'ms', today)} jam ${fmtTime(b.time, 'ms')}\n🦷 ${svcName(s, 'ms')}\n\nBoleh datang?\n*1* – Ya, saya datang\n*2* – Tukar masa\n*3* – Batal`
+      : `⏰ Hai ${b.name || ''}, temujanji anda di ${c.short_name} adalah dalam ${hrs} jam lagi (${fmtTime(b.time, 'ms')}).\n📍 ${c.address}\n🗺️ ${c.waze_url}\n\nJumpa nanti! Balas *2* jika perlu tukar masa.`,
+    reminderButtons: () => [{ id: 'rem_yes', title: 'Ya, saya datang' }, { id: 'rem_resched', title: 'Tukar masa' }, { id: 'rem_cancel', title: 'Batal' }],
+    reminderConfirmed: () => `Terima kasih! Jumpa esok 😊`,
+    langSwitched: () => `Baik, saya balas dalam Bahasa Melayu.`,
+  },
+  en: {
+    greeting: (c, name) => `${name ? `Hi ${name}! ` : 'Hi! '}Welcome to *${c.name.en}* 🦷\n\nI'm the clinic's booking assistant. How can I help?`,
+    menu: () => `Choose one:\n\n*1* – Book an appointment\n*2* – Reschedule / cancel\n*3* – Opening hours & location\n*4* – Talk to staff\n\n_Type a number, or just tell me, e.g. "scaling tomorrow afternoon"_`,
+    menuButtons: () => [{ id: 'book', title: 'Book' }, { id: 'manage', title: 'Reschedule/Cancel' }, { id: 'info', title: 'Hours & Location' }],
+    askService: (c) => `What treatment do you need?\n\n${c.services.map((s, i) => `*${i + 1}* – ${svcName(s, 'en')} (${price(s, 'en')})`).join('\n')}`,
+    askDate: () => `When would you like to come? You can type e.g. *tomorrow*, *Saturday*, or *30/10*.`,
+    askDateWithOptions: (dates, today) => `When would you like to come?\n\n${dates.map((d, i) => `*${i + 1}* – ${fmtDate(d, 'en', today)}`).join('\n')}\n\n_Or type another date, e.g. "next Saturday" or "5/11"_`,
+    closedOn: (d, today, alts) => `Sorry, we're closed on ${fmtDate(d, 'en', today)}. Nearest available days:\n\n${alts.map((x, i) => `*${i + 1}* – ${fmtDate(x, 'en', today)}`).join('\n')}`,
+    noSlots: (d, today, alts) => `Sorry, ${fmtDate(d, 'en', today)} is fully booked. Nearest available days:\n\n${alts.map((x, i) => `*${i + 1}* – ${fmtDate(x, 'en', today)}`).join('\n')}`,
+    tooFar: (max) => `Sorry, bookings can only be made up to ${max} days ahead. Please pick another date.`,
+    pastDate: () => `That date has passed. Please pick another, e.g. *tomorrow* or *Saturday*.`,
+    askTime: (d, today, slots) => `Available slots on ${fmtDate(d, 'en', today)}:\n\n${slots.map((s, i) => `*${i + 1}* – ${fmtTime(s, 'en')}`).join('\n')}\n\n_Type a number, or e.g. "afternoon" / "3pm"_`,
+    timeTaken: (t, slots) => `Sorry, ${fmtTime(t, 'en')} is taken. Nearest slots:\n\n${slots.map((s, i) => `*${i + 1}* – ${fmtTime(s, 'en')}`).join('\n')}`,
+    noSlotsPeriod: (slots) => `No slots at that time. Other available slots:\n\n${slots.map((s, i) => `*${i + 1}* – ${fmtTime(s, 'en')}`).join('\n')}`,
+    askName: () => `May I have your full name?`,
+    confirm: (c, b, s, today) => `Please check your booking:\n\n👤 *${b.name}*\n🦷 ${svcName(s, 'en')}\n📅 ${fmtDate(b.date, 'en', today)}\n🕒 ${fmtTime(b.time, 'en')}\n📍 ${c.short_name}, ${c.address.split(',').slice(-2).join(',').trim()}\n\nCorrect? Reply *YES* to confirm or *NO* to change.`,
+    confirmButtons: () => [{ id: 'yes', title: 'Yes, confirm ✅' }, { id: 'no', title: 'Change' }],
+    booked: (c, b, s, today) => `✅ *Booking confirmed!*\n\n📅 ${fmtDate(b.date, 'en', today)} at ${fmtTime(b.time, 'en')}\n🦷 ${svcName(s, 'en')}\n📍 ${c.address}\n🗺️ Waze: ${c.waze_url}\n\nReference: *#${b.id}*\n\nI'll send a reminder the day before. Need to change? Reply "reschedule" any time.`,
+    deposit: (c) => `💳 To secure your slot, please pay a *RM${c.deposit.amount}* deposit via DuitNow:\n${c.deposit.duitnow_url || '(clinic DuitNow QR)'}\n\n${c.deposit.note.en} Send a screenshot of the receipt here once paid.`,
+    notConfirmed: () => `No problem, nothing booked yet. What would you like to change?\n\n*1* – Treatment\n*2* – Date\n*3* – Time\n*4* – Name\n*5* – Just cancel`,
+    noUpcoming: () => `I couldn't find any upcoming appointment for this number. Want to make a new booking? Reply *1*.`,
+    yourBookings: (bs, services, today) => `Your appointments:\n\n${bs.map((b, i) => `*${i + 1}* – ${fmtDate(b.date, 'en', today)} ${fmtTime(b.time, 'en')} · ${svcName(services.find(s => s.id === b.service_id) || {}, 'en')} (#${b.id})`).join('\n')}\n\nWhich one?`,
+    manageWhat: (b, s, today) => `Appointment #${b.id}: ${fmtDate(b.date, 'en', today)} ${fmtTime(b.time, 'en')} · ${svcName(s, 'en')}\n\n*1* – Change date/time\n*2* – Cancel appointment\n*3* – Keep it, no changes`,
+    cancelConfirm: (b, today) => `Cancel your appointment on ${fmtDate(b.date, 'en', today)} ${fmtTime(b.time, 'en')}? Reply *YES* to cancel.`,
+    cancelled: (b) => `Appointment #${b.id} has been cancelled. To book again, reply *1* any time. Thank you! 🙏`,
+    rescheduled: (c, b, s, today) => `✅ *Appointment moved!*\n\n📅 ${fmtDate(b.date, 'en', today)} at ${fmtTime(b.time, 'en')}\n🦷 ${svcName(s, 'en')}\n📍 ${c.short_name}\n\nReference: *#${b.id}*. See you then!`,
+    info: (c) => `📍 *${c.name.en}*\n${c.address}\n🗺️ Waze: ${c.waze_url}\n📞 ${c.phone}\n\n🕒 *Opening hours*\n${hoursText(c, 'en')}\n\nWant to book? Reply *1*.`,
+    priceList: (c) => `💰 *Price guide*\n${c.services.map(s => `• ${svcName(s, 'en')} – ${price(s, 'en')}`).join('\n')}\n\n_Final price depends on the dentist's examination._\n\nWant to book? Reply *1*.`,
+    handoff: (c) => `Sure, I've notified the clinic staff. They'll reply here shortly (during opening hours). Thanks for your patience 🙏`,
+    handoffActive: () => `Our staff will reply shortly. To go back to the automated menu, type *menu*.`,
+    thanks: () => `You're welcome! See you soon 😊`,
+    fallback: () => `Sorry, I didn't catch that. Type *menu* for options, or just tell me, e.g. "scaling tomorrow afternoon".`,
+    reminder: (c, b, s, hrs, today) => hrs >= 12
+      ? `⏰ *Appointment reminder*\n\nHi ${b.name || ''}, see you tomorrow at ${c.short_name}:\n📅 ${fmtDate(b.date, 'en', today)} at ${fmtTime(b.time, 'en')}\n🦷 ${svcName(s, 'en')}\n\nCan you make it?\n*1* – Yes, I'll be there\n*2* – Reschedule\n*3* – Cancel`
+      : `⏰ Hi ${b.name || ''}, your appointment at ${c.short_name} is in ${hrs} hours (${fmtTime(b.time, 'en')}).\n📍 ${c.address}\n🗺️ ${c.waze_url}\n\nSee you soon! Reply *2* if you need to reschedule.`,
+    reminderButtons: () => [{ id: 'rem_yes', title: "Yes, I'll be there" }, { id: 'rem_resched', title: 'Reschedule' }, { id: 'rem_cancel', title: 'Cancel' }],
+    reminderConfirmed: () => `Thank you! See you tomorrow 😊`,
+    langSwitched: () => `Sure, I'll reply in English.`,
+  },
+  zh: {
+    greeting: (c, name) => `${name ? `${name}，您好！` : '您好！'}欢迎来到 *${c.name.zh || c.name.en}* 🦷\n\n我是诊所的预约助手，请问有什么可以帮您？`,
+    menu: () => `请选择：\n\n*1* – 预约看诊\n*2* – 更改 / 取消预约\n*3* – 营业时间与地址\n*4* – 联系前台\n\n_输入数字，或直接告诉我，例如：“明天下午洗牙”_`,
+    menuButtons: () => [{ id: 'book', title: '预约' }, { id: 'manage', title: '更改 / 取消' }, { id: 'info', title: '时间与地址' }],
+    askService: (c) => `请问需要哪项治疗？\n\n${c.services.map((s, i) => `*${i + 1}* – ${svcName(s, 'zh')}（${price(s, 'zh')}）`).join('\n')}`,
+    askDate: () => `请问哪一天方便？可以输入：*明天*、*星期六*、或 *30/10*。`,
+    askDateWithOptions: (dates, today) => `请问哪一天方便？\n\n${dates.map((d, i) => `*${i + 1}* – ${fmtDate(d, 'zh', today)}`).join('\n')}\n\n_或输入其他日期，例如“下周六”或“5/11”_`,
+    closedOn: (d, today, alts) => `不好意思，${fmtDate(d, 'zh', today)}诊所休息。最近可预约的日期：\n\n${alts.map((x, i) => `*${i + 1}* – ${fmtDate(x, 'zh', today)}`).join('\n')}`,
+    noSlots: (d, today, alts) => `不好意思，${fmtDate(d, 'zh', today)}已约满。最近可预约的日期：\n\n${alts.map((x, i) => `*${i + 1}* – ${fmtDate(x, 'zh', today)}`).join('\n')}`,
+    tooFar: (max) => `不好意思，目前只接受 ${max} 天内的预约，请选择其他日期。`,
+    pastDate: () => `这个日期已经过去了，请选择其他日期，例如 *明天* 或 *星期六*。`,
+    askTime: (d, today, slots) => `${fmtDate(d, 'zh', today)}可预约的时间：\n\n${slots.map((s, i) => `*${i + 1}* – ${fmtTime(s, 'zh')}`).join('\n')}\n\n_输入数字，或例如“下午”/“3点”_`,
+    timeTaken: (t, slots) => `不好意思，${fmtTime(t, 'zh')}已被预约。最接近的时间：\n\n${slots.map((s, i) => `*${i + 1}* – ${fmtTime(s, 'zh')}`).join('\n')}`,
+    noSlotsPeriod: (slots) => `那个时段没有空位了。其他可预约的时间：\n\n${slots.map((s, i) => `*${i + 1}* – ${fmtTime(s, 'zh')}`).join('\n')}`,
+    askName: () => `请问您的姓名？`,
+    confirm: (c, b, s, today) => `请确认您的预约：\n\n👤 *${b.name}*\n🦷 ${svcName(s, 'zh')}\n📅 ${fmtDate(b.date, 'zh', today)}\n🕒 ${fmtTime(b.time, 'zh')}\n📍 ${c.short_name}，${c.address.split(',').slice(-2).join(',').trim()}\n\n正确吗？回复 *是* 确认，或 *不是* 修改。`,
+    confirmButtons: () => [{ id: 'yes', title: '是，确认 ✅' }, { id: 'no', title: '修改' }],
+    booked: (c, b, s, today) => `✅ *预约成功！*\n\n📅 ${fmtDate(b.date, 'zh', today)} ${fmtTime(b.time, 'zh')}\n🦷 ${svcName(s, 'zh')}\n📍 ${c.address}\n🗺️ Waze：${c.waze_url}\n\n预约编号：*#${b.id}*\n\n我会在前一天发提醒给您。如需更改，随时回复“改时间”。`,
+    deposit: (c) => `💳 为了保留您的时段，请通过 DuitNow 支付 *RM${c.deposit.amount}* 订金：\n${c.deposit.duitnow_url || '（诊所 DuitNow 二维码）'}\n\n${(c.deposit.note && c.deposit.note.zh) || '订金将从治疗费用中扣除。'} 付款后请把收据截图发到这里。`,
+    notConfirmed: () => `好的，预约还没确认。请问要修改什么？\n\n*1* – 治疗项目\n*2* – 日期\n*3* – 时间\n*4* – 姓名\n*5* – 取消`,
+    noUpcoming: () => `这个号码没有即将到来的预约。需要新预约吗？回复 *1*。`,
+    yourBookings: (bs, services, today) => `您的预约：\n\n${bs.map((b, i) => `*${i + 1}* – ${fmtDate(b.date, 'zh', today)} ${fmtTime(b.time, 'zh')} · ${svcName(services.find(s => s.id === b.service_id) || {}, 'zh')}（#${b.id}）`).join('\n')}\n\n请问是哪一个？`,
+    manageWhat: (b, s, today) => `预约 #${b.id}：${fmtDate(b.date, 'zh', today)} ${fmtTime(b.time, 'zh')} · ${svcName(s, 'zh')}\n\n*1* – 更改日期/时间\n*2* – 取消预约\n*3* – 保留，不更改`,
+    cancelConfirm: (b, today) => `确定取消 ${fmtDate(b.date, 'zh', today)} ${fmtTime(b.time, 'zh')} 的预约吗？回复 *是* 取消。`,
+    cancelled: (b) => `预约 #${b.id} 已取消。如需重新预约，随时回复 *1*。谢谢！🙏`,
+    rescheduled: (c, b, s, today) => `✅ *预约已更改！*\n\n📅 ${fmtDate(b.date, 'zh', today)} ${fmtTime(b.time, 'zh')}\n🦷 ${svcName(s, 'zh')}\n📍 ${c.short_name}\n\n预约编号：*#${b.id}*。到时见！`,
+    info: (c) => `📍 *${c.name.zh || c.name.en}*\n${c.address}\n🗺️ Waze：${c.waze_url}\n📞 ${c.phone}\n\n🕒 *营业时间*\n${hoursText(c, 'zh')}\n\n需要预约吗？回复 *1*。`,
+    priceList: (c) => `💰 *价格参考*\n${c.services.map(s => `• ${svcName(s, 'zh')} – ${price(s, 'zh')}`).join('\n')}\n\n_实际费用视医生检查而定。_\n\n需要预约吗？回复 *1*。`,
+    handoff: (c) => `好的，我已通知诊所前台，他们会在营业时间内尽快在这里回复您。谢谢耐心等待 🙏`,
+    handoffActive: () => `前台会尽快回复您。如需返回自动菜单，请输入 *菜单*。`,
+    thanks: () => `不客气！到时见 😊`,
+    fallback: () => `不好意思，我没听懂。输入 *菜单* 查看选项，或直接告诉我，例如：“明天下午洗牙”。`,
+    reminder: (c, b, s, hrs, today) => hrs >= 12
+      ? `⏰ *预约提醒*\n\n${b.name || ''}您好，明天在 ${c.short_name} 见：\n📅 ${fmtDate(b.date, 'zh', today)} ${fmtTime(b.time, 'zh')}\n🦷 ${svcName(s, 'zh')}\n\n请问能准时到吗？\n*1* – 可以，我会到\n*2* – 更改时间\n*3* – 取消`
+      : `⏰ ${b.name || ''}您好，您在 ${c.short_name} 的预约还有 ${hrs} 小时（${fmtTime(b.time, 'zh')}）。\n📍 ${c.address}\n🗺️ ${c.waze_url}\n\n到时见！如需更改时间，请回复 *2*。`,
+    reminderButtons: () => [{ id: 'rem_yes', title: '可以，我会到' }, { id: 'rem_resched', title: '更改时间' }, { id: 'rem_cancel', title: '取消' }],
+    reminderConfirmed: () => `谢谢！明天见 😊`,
+    langSwitched: () => `好的，我用中文回复您。`,
+  },
+};
+
+function hoursText(c, lang) {
+  const names = lang === 'ms'
+    ? { mon: 'Isnin', tue: 'Selasa', wed: 'Rabu', thu: 'Khamis', fri: 'Jumaat', sat: 'Sabtu', sun: 'Ahad' }
+    : lang === 'zh' ? { mon: '周一', tue: '周二', wed: '周三', thu: '周四', fri: '周五', sat: '周六', sun: '周日' }
+    : { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' };
+  const closed = lang === 'ms' ? 'Tutup' : lang === 'zh' ? '休息' : 'Closed';
+  // group consecutive identical days
+  const order = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+  const lines = []; let start = 0;
+  for (let i = 1; i <= order.length; i++) {
+    const same = i < order.length && JSON.stringify(c.hours[order[i]]) === JSON.stringify(c.hours[order[start]]);
+    if (!same) {
+      const h = c.hours[order[start]];
+      const label = start === i - 1 ? names[order[start]] : lang === 'zh' ? `${names[order[start]]}至${names[order[i - 1]]}` : `${names[order[start]]}–${names[order[i - 1]]}`;
+      lines.push(`${label}${lang === 'zh' ? '：' : ': '}${h ? `${fmtTime(h[0], lang)} – ${fmtTime(h[1], lang)}` : closed}`);
+      start = i;
+    }
+  }
+  return lines.join('\n');
+}
+
+module.exports = { M, fmtDate, fmtTime, svcName };
+
+};
+__defs["./engine/ai"] = function(module, exports){
+// AI layer: Claude answers free-form questions as the clinic's assistant, using only the clinic's own
+// knowledge, and hands structured intents (book / manage / staff) back to the deterministic engine.
+//
+// The transport is injected so the same code runs on the server (Anthropic API) and in the browser demo
+// (the artifact "sample" capability):   setCompleter(async (system, messages) => text)
+
+let completer = null;
+function setCompleter(fn) { completer = typeof fn === 'function' ? fn : null; }
+function available() { return !!completer; }
+
+// ---- question detection (decides when to consult the AI instead of re-asking the script's prompt) ----
+const Q_WORDS = /\b(apa|apakah|kenapa|mengapa|macam ?mana|bagaimana|boleh ?(ke|tak|x)|bolehkah|adakah|ada ?(ke|tak|x)\b|berapa|bila|siapa|mana|perlu ?(ke|tak)|kena ?(ke|tak)|sakit ?(ke|tak|x)|selamat ?(ke|tak)|what|why|how|can i|can you|could|should|is it|is there|are there|do you|does|will|would|which|where|when|who|any|got)\b/i;
+function looksLikeQuestion(text) {
+  const t = (text || '').trim();
+  if (!t) return false;
+  if (t.includes('?')) return true;
+  if (Q_WORDS.test(t) && t.split(/\s+/).length >= 2) return true;
+  return false;
+}
+
+// ---- knowledge prompt ----
+function fmtHours(c) {
+  const names = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' };
+  return Object.entries(names).map(([k, n]) => `${n}: ${c.hours[k] ? c.hours[k].join('–') : 'closed'}`).join(', ') + (c.lunch ? `; lunch break ${c.lunch.join('–')}` : '');
+}
+
+function buildSystem(clinic, conv) {
+  const c = clinic;
+  const ai = c.ai || {};
+  const persona = ai.persona || 'the clinic assistant';
+  const lang = conv && conv.lang === 'en' ? 'English' : conv && conv.lang === 'zh' ? 'Chinese (简体中文)' : 'Bahasa Melayu';
+  const services = c.services.map(s => `- ${s.en} / ${s.ms}${s.zh ? ' / ' + s.zh : ''} (id: ${s.id}): ${s.price_from ? `from RM${s.price_from}` : 'free consultation'}, about ${s.duration} min`).join('\n');
+  const faq = (ai.knowledge || []).map(k => `- ${k}`).join('\n');
+  return `You are ${persona}, the WhatsApp assistant for ${c.name.en} (${c.name.ms}), a dental clinic in Malaysia. You are NOT a dentist.
+
+CLINIC FACTS (the only facts you may state):
+- Address: ${c.address}
+- Waze: ${c.waze_url}
+- Phone: ${c.phone}
+- Hours: ${fmtHours(c)}
+- Bookings: up to ${c.max_days_ahead || 14} days ahead, ${c.slot_minutes}-minute slots
+${c.deposit && c.deposit.enabled ? `- Deposit: RM${c.deposit.amount} via DuitNow to lock a slot; it is deducted from the treatment bill` : '- No deposit required'}
+- Services and price guide (final price depends on the dentist's examination):
+${services}
+${faq ? `- Other facts:\n${faq}` : ''}
+
+HOW TO REPLY:
+- Write like a friendly, efficient clinic receptionist on WhatsApp: 1–3 short sentences, warm, no fluff. Match the patient's language and style — Bahasa Melayu, English, Manglish/rojak, or Chinese (the patient's current preference is ${lang}). For Chinese use simplified characters and natural Malaysian-Chinese phrasing (e.g. 洗牙, 补牙, 拔牙, 预约).
+- Plain text only. You may use *bold* for a price or a time. No bullet lists unless listing 3+ prices. No markdown headings, no emojis beyond one at most.
+- Only state facts from CLINIC FACTS. If you do not know something (insurance panels, a specific dentist, parking, a price not listed, a medical question that needs a dentist), say you will check with the clinic staff — do not guess.
+- Medical questions: give short general reassurance and practical guidance only (e.g. scaling is usually painless, mild sensitivity afterwards is normal). Never diagnose, never prescribe, never give dosages. Recommend the dentist examine them. For severe pain, swelling, bleeding that will not stop, or trauma: tell them to call the clinic now or go to the nearest hospital emergency department.
+- You CANNOT see the appointment calendar. Never state or imply that a date or time is available or booked. Never confirm a booking yourself.
+- Stay on the clinic's topics. If asked something unrelated, answer in one friendly line and steer back to how you can help with their dental visit.
+- Always end with a light nudge toward the next step when natural (e.g. "Nak saya bantu tempah slot?").
+
+ACTIONS — when the patient's message shows one of these intents, put exactly one tag on its own last line, after your reply text:
+- They want to make an appointment (even just "ok", "ya", "boleh" after you offered): <action>book</action> or, if the treatment is clear, <action>book:SERVICE_ID</action> using an id from the services list.
+- They want to change or cancel an existing appointment: <action>manage</action>
+- They ask for a human, a specific dentist, a call, or you cannot help: <action>handoff</action>
+Otherwise add no tag. The system will take over the booking the moment you emit the tag, so when you emit <action>book…</action> keep your text to one short sentence like "Boleh! Saya bantu tempahkan." and do not ask for date or time yourself.`;
+}
+
+// ---- history → turns ----
+function historyTurns(messages, limit = 8) {
+  const turns = [];
+  for (const m of messages.slice(-limit)) {
+    const role = m.direction === 'in' ? 'user' : 'assistant';
+    const content = String(m.text || '').trim();
+    if (!content) continue;
+    if (turns.length && turns[turns.length - 1].role === role) turns[turns.length - 1].content += '\n' + content;
+    else turns.push({ role, content });
+  }
+  while (turns.length && turns[0].role !== 'user') turns.shift();
+  return turns;
+}
+
+const ACTION_RE = /<action>\s*([a-z]+)(?::([a-z0-9_-]+))?\s*<\/action>/i;
+
+// Returns { text, action: {type, service_id?} | null } or null when the AI is unavailable / failed.
+async function answer(clinic, conv, recentMessages, userText, { log } = {}) {
+  if (!completer) return null;
+  const system = buildSystem(clinic, conv);
+  const prior = historyTurns(recentMessages.filter(m => m.text !== userText || m.direction !== 'in'));
+  const messages = [...prior, { role: 'user', content: userText }];
+  try {
+    const raw = await completer(system, messages, { clinic, conv });
+    if (!raw || !String(raw).trim()) return null;
+    let text = String(raw).trim();
+    let action = null;
+    const m = text.match(ACTION_RE);
+    if (m) {
+      action = { type: m[1].toLowerCase(), service_id: m[2] || null };
+      text = text.replace(ACTION_RE, '').trim();
+    }
+    // strip any markdown the model slipped in
+    text = text.replace(/^#+\s*/gm, '').replace(/\*\*(.+?)\*\*/g, '*$1*');
+    return { text, action };
+  } catch (e) {
+    if (log && log.error) log.error('[ai]', e && e.message || e);
+    return null;
+  }
+}
+
+// ---- server-side transport: Anthropic Messages API via fetch (no SDK) ----
+function anthropicCompleter({ apiKey = process.env.ANTHROPIC_API_KEY, model = process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5', maxTokens = 350 } = {}) {
+  if (!apiKey) return null;
+  return async (system, messages) => {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      body: JSON.stringify({ model, max_tokens: maxTokens, system, messages }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(`Anthropic API ${res.status}: ${JSON.stringify(json).slice(0, 300)}`);
+    return (json.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
+  };
+}
+
+module.exports = { setCompleter, available, looksLikeQuestion, buildSystem, historyTurns, answer, anthropicCompleter };
+
+};
+__defs["./engine/conversation"] = function(module, exports){
+// The booking conversation state machine. Channel-agnostic: takes text in, returns replies out.
+const db = __req("./store");
+const S = __req("./engine/scheduling");
+const P = __req("./engine/parser");
+const { M } = __req("./engine/messages");
+const AI = __req("./engine/ai");
+
+const nowInstant = () => new Date();
+
+function reply(text, buttons) { return buttons ? { text, buttons } : { text }; }
+
+function svc(clinic, id) { return clinic.services.find(s => s.id === id); }
+
+function slotsFor(clinic, dateStr, duration) {
+  return S.availableSlots(clinic, dateStr, duration, db.bookingsOnDate(clinic.id, dateStr), nowInstant());
+}
+
+// Next n open dates that still have at least one free slot.
+function openDatesWithSlots(clinic, fromDate, duration, n) {
+  return S.nextOpenDates(clinic, fromDate, 10).filter(x => slotsFor(clinic, x, duration).length).slice(0, n);
+}
+
+function nearestSlots(slots, hhmm, n = 4) {
+  const t = S.toMinutes(hhmm);
+  return [...slots].sort((a, b) => Math.abs(S.toMinutes(a) - t) - Math.abs(S.toMinutes(b) - t)).slice(0, n).sort();
+}
+
+// ---- main entry ----
+// input: { text, buttonId? }  -> { replies: [{text, buttons?}], events: [{type, ...}] , conv }
+async function handle(clinic, phone, input, opts = {}) {
+  const text = (input.buttonId ? buttonToText(input.buttonId) : input.text) || '';
+  const conv = db.getConversation(clinic.id, phone);
+  const events = [];
+  const today = S.todayStr(clinic, nowInstant());
+  if (!conv.name) conv.name = db.lastNameForPhone(clinic.id, phone);
+
+  db.logMessage(clinic.id, phone, 'in', text);
+
+  // language
+  const detected = P.detectLanguage(text);
+  const explicitSwitch = /\b(english|in english|eng)\b/i.test(text) ? 'en' : /\b(bm|bahasa|melayu|malay)\b/i.test(text) ? 'ms' : /中文|华语|华文|chinese|mandarin/i.test(text) ? 'zh' : null;
+  const clearSentence = P.hasCJK(text) ? text.replace(/[^\u4e00-\u9fff]/g, '').length >= 2 : P.norm(text).split(' ').length >= 3;
+  if (explicitSwitch) conv.lang = explicitSwitch;
+  else if (!conv.lang) conv.lang = detected || clinic.default_language || 'ms';
+  else if (detected && detected !== conv.lang && clearSentence) conv.lang = detected; // switch on a clear sentence
+  if (!M[conv.lang]) conv.lang = clinic.default_language || 'ms';
+  const L = M[conv.lang];
+  const ctx = { clinic, phone, conv, L, today, events, replies: [], source: opts.source, log: opts.log, rawText: text };
+  const say = (t, b) => ctx.replies.push(reply(t, b));
+
+  if (explicitSwitch && (P.hasCJK(text) ? text.replace(/[^\u4e00-\u9fff]/g, '').length <= 4 : P.norm(text).split(' ').length <= 2)) {
+    say(L.langSwitched());
+    if (conv.step === 'idle' || conv.step === 'menu') { say(L.menu()); conv.step = 'menu'; }
+    return finish(ctx);
+  }
+
+  const t = P.norm(text);
+  const intent = P.detectIntent(text);
+
+  // global: back to menu
+  if (/^(menu|mula|start|home|utama|\/start|菜单|主菜单|开始|返回)$/.test(t)) {
+    conv.handoff_until = null; conv.data = {}; conv.step = 'menu';
+    say(L.greeting(clinic, conv.name)); say(L.menu(), L.menuButtons());
+    return finish(ctx);
+  }
+
+  // handoff active: stay quiet after first notice
+  if (conv.handoff_until && conv.handoff_until > Date.now()) {
+    if (!conv.data.handoff_notified) { conv.data.handoff_notified = true; say(L.handoffActive()); }
+    return finish(ctx);
+  }
+
+  // global: staff
+  if (intent === 'staff') return doHandoff(ctx);
+
+  // reminder quick replies take priority when a reminder is pending
+  if (conv.last_reminder_booking_id && (conv.step === 'idle' || conv.step === 'menu')) {
+    const b = db.getBooking(conv.last_reminder_booking_id);
+    if (b && b.status === 'confirmed') {
+      if (input.buttonId === 'rem_yes' || P.pickNumber(text, 3) === 1 || P.isYes(text) || /\b(datang|be there|coming|confirm)\b/.test(t) || /会到|会来|能到|准时|我会去/.test(t)) {
+        b.patient_confirmed = 1; db.updateBooking(b); conv.last_reminder_booking_id = null;
+        events.push({ type: 'patient_confirmed', booking: b });
+        say(L.reminderConfirmed()); return finish(ctx);
+      }
+      if (input.buttonId === 'rem_resched' || P.pickNumber(text, 3) === 2 || intent === 'reschedule') {
+        conv.last_reminder_booking_id = null; return startReschedule(ctx, b);
+      }
+      if (input.buttonId === 'rem_cancel' || P.pickNumber(text, 3) === 3 || intent === 'cancel') {
+        conv.last_reminder_booking_id = null; conv.data = { booking_id: b.id }; conv.step = 'cancel_confirm';
+        say(L.cancelConfirm(b, today)); return finish(ctx);
+      }
+    } else conv.last_reminder_booking_id = null;
+  }
+
+  switch (conv.step) {
+    case 'idle':
+    case 'menu': return onIdle(ctx, text, intent, input.buttonId);
+    case 'book_service': return onService(ctx, text);
+    case 'book_date': return onDate(ctx, text);
+    case 'book_time': return onTime(ctx, text);
+    case 'book_name': return onName(ctx, text);
+    case 'book_confirm': return onConfirm(ctx, text, input.buttonId);
+    case 'fix_what': return onFixWhat(ctx, text);
+    case 'manage_pick': return onManagePick(ctx, text);
+    case 'manage_what': return onManageWhat(ctx, text, intent);
+    case 'cancel_confirm': return onCancelConfirm(ctx, text, input.buttonId);
+    default: conv.step = 'idle'; return onIdle(ctx, text, intent, input.buttonId);
+  }
+}
+
+function buttonToText(id) {
+  return { book: '1', manage: '2', info: '3', yes: 'yes', no: 'no', rem_yes: '1', rem_resched: '2', rem_cancel: '3' }[id] || id;
+}
+
+async function finish(ctx) {
+  const { clinic, phone, conv } = ctx;
+  if (ctx.wantAI) {
+    const req = ctx.wantAI; ctx.wantAI = null;
+    const history = db.recentMessages(clinic.id, phone, 12);
+    const ai = await AI.answer(clinic, conv, history, req.text, { log: ctx.log });
+    if (ai) {
+      ctx.events.push({ type: 'ai_answered', phone, question: req.text });
+      if (ai.text) ctx.replies.push(reply(ai.text));
+      if (ai.action && req.allowActions !== false) {
+        const r = await runAction(ctx, ai.action);
+        if (r) return r; // action handler already finished
+      }
+      if (req.followUp) ctx.replies.push(req.followUp);
+    } else {
+      for (const r of req.fallback || []) ctx.replies.push(r);
+    }
+  }
+  db.saveConversation(conv);
+  for (const r of ctx.replies) db.logMessage(clinic.id, phone, 'out', r.text);
+  return { replies: ctx.replies, events: ctx.events, conv };
+}
+
+// The AI asked the engine to take over (book / manage / handoff).
+function runAction(ctx, action) {
+  const { clinic, conv } = ctx;
+  if (action.type === 'book') {
+    conv.data = { mode: 'book' };
+    const s = action.service_id ? svc(clinic, action.service_id) : null;
+    if (s) conv.data.service_id = s.id;
+    // keep any date/time the patient already mentioned ("boleh buat scaling esok petang?")
+    const date = P.parseDate(ctx.rawText || '', ctx.today); if (date && date >= ctx.today) conv.data.date = date;
+    const time = P.parseTime(ctx.rawText || ''); if (time) conv.data.timeHint = time;
+    return advanceBooking(ctx);
+  }
+  if (action.type === 'manage') return startManage(ctx, null);
+  if (action.type === 'handoff') return doHandoff(ctx);
+  return null;
+}
+
+// Ask the AI instead of the scripted prompt, when it is available and the message reads like a question.
+// Returns true when the AI will answer (caller should `return finish(ctx)`).
+function deferToAI(ctx, text, { followUp = null, fallback = [], allowActions = true } = {}) {
+  if (!AI.available() || !AI.looksLikeQuestion(text)) return false;
+  ctx.wantAI = { text, followUp, fallback, allowActions };
+  return true;
+}
+
+// ---- idle / menu ----
+function onIdle(ctx, text, intent, buttonId) {
+  const { clinic, conv, L, today } = ctx;
+  const say = (t, b) => ctx.replies.push(reply(t, b));
+  const n = conv.step === 'menu' ? P.pickNumber(text, 4) : null;
+  const choice = buttonId === 'book' || n === 1 ? 'book' : buttonId === 'manage' || n === 2 ? 'manage' : buttonId === 'info' || n === 3 ? 'info' : n === 4 ? 'staff' : null;
+
+  if (choice === 'staff') return doHandoff(ctx);
+  if (choice === 'info' || intent === 'hours' || intent === 'location') { say(L.info(clinic)); conv.step = 'menu'; return finish(ctx); }
+  if (choice === 'manage' || intent === 'cancel' || intent === 'reschedule') return startManage(ctx, intent);
+  if (intent === 'thanks') { say(L.thanks()); conv.step = 'idle'; return finish(ctx); }
+
+  // Booking: either explicit, or the message already contains a service/date/time
+  const isBareNumber = /^\s*\d{1,2}\s*$/.test(text);
+  const service = isBareNumber ? null : P.matchService(text, clinic.services);
+  const date = P.parseDate(text, today);
+  const time = P.parseTime(text);
+  // "boleh buat scaling esok?" is a question first; the AI answers and, if it starts a booking, the date/time hints are kept.
+  const question = AI.available() && AI.looksLikeQuestion(text) && intent !== 'book' && choice !== 'book';
+  const explicitBook = choice === 'book' || intent === 'book' || (!!date && !question);
+  // A question that is not an explicit booking request goes to the AI first ("scaling sakit tak?", "ada parking?")
+  if (!explicitBook && AI.available() && (intent === 'price' || AI.looksLikeQuestion(text))) {
+    conv.step = 'menu';
+    ctx.wantAI = { text, fallback: [reply(intent === 'price' ? L.priceList(clinic) : L.fallback())] };
+    return finish(ctx);
+  }
+  if (intent === 'price') { say(L.priceList(clinic)); conv.step = 'menu'; return finish(ctx); }
+  if (explicitBook || service || (time && conv.step === 'menu')) {
+    conv.data = { mode: 'book' };
+    if (service) conv.data.service_id = service.id;
+    if (date) conv.data.date = date;
+    if (time) conv.data.timeHint = time;
+    return advanceBooking(ctx);
+  }
+
+  if (intent === 'greeting' || (conv.step === 'idle' && !AI.available())) {
+    say(L.greeting(clinic, conv.name)); say(L.menu(), L.menuButtons()); conv.step = 'menu'; return finish(ctx);
+  }
+  // Anything else: let the AI reply like a human would; otherwise the scripted fallback.
+  if (AI.available()) { conv.step = 'menu'; ctx.wantAI = { text, fallback: [reply(L.fallback())] }; return finish(ctx); }
+  say(L.fallback()); return finish(ctx);
+}
+
+// ---- booking flow ----
+// Moves to the next missing piece of a booking.
+function advanceBooking(ctx) {
+  const { clinic, conv, L, today } = ctx;
+  const say = (t, b) => ctx.replies.push(reply(t, b));
+  const d = conv.data;
+
+  if (!d.service_id) { conv.step = 'book_service'; say(L.askService(clinic)); return finish(ctx); }
+  const s = svc(clinic, d.service_id);
+
+  if (!d.date) {
+    conv.step = 'book_date';
+    d.dateOptions = openDatesWithSlots(clinic, today, s.duration, 3);
+    say(L.askDateWithOptions(d.dateOptions, today)); return finish(ctx);
+  }
+  if (!d.time) {
+    const slots = slotsFor(clinic, d.date, s.duration);
+    if (!slots.length) {
+      const alts = openDatesWithSlots(clinic, S.addDays(d.date, 1), s.duration, 3);
+      d.dateOptions = alts; d.date = null; conv.step = 'book_date';
+      say(L.noSlots(d.date, today, alts)); return finish(ctx);
+    }
+    // apply a time hint from the original message
+    if (d.timeHint) {
+      const hint = d.timeHint; d.timeHint = null;
+      if (hint.time) {
+        if (slots.includes(hint.time)) { d.time = hint.time; return advanceBooking(ctx); }
+        d.slots = nearestSlots(slots, hint.time); conv.step = 'book_time'; say(L.timeTaken(hint.time, d.slots)); return finish(ctx);
+      }
+      if (hint.period) {
+        const f = slots.filter(P.periodFilter(hint.period));
+        d.slots = f.length ? f.slice(0, 6) : slots.slice(0, 6); conv.step = 'book_time';
+        say(f.length ? L.askTime(d.date, today, d.slots) : L.noSlotsPeriod(d.slots)); return finish(ctx);
+      }
+    }
+    d.slots = slots.slice(0, 6); conv.step = 'book_time'; say(L.askTime(d.date, today, d.slots)); return finish(ctx);
+  }
+  if (!d.name) {
+    if (conv.name) d.name = conv.name;
+    else { conv.step = 'book_name'; say(L.askName()); return finish(ctx); }
+  }
+  conv.step = 'book_confirm';
+  const preview = { name: d.name, date: d.date, time: d.time };
+  say(L.confirm(clinic, preview, s, today), L.confirmButtons());
+  return finish(ctx);
+}
+
+function onService(ctx, text) {
+  const { clinic, conv, L } = ctx;
+  const s = P.matchService(text, clinic.services);
+  if (!s) {
+    if (deferToAI(ctx, text, { followUp: reply(L.askService(clinic)), fallback: [reply(L.askService(clinic))], allowActions: false })) return finish(ctx);
+    ctx.replies.push(reply(L.askService(clinic))); return finish(ctx);
+  }
+  conv.data.service_id = s.id;
+  // the same message may also carry a date/time
+  const date = P.parseDate(text, ctx.today); if (date && !conv.data.date) conv.data.date = date;
+  const time = P.parseTime(text); if (time) conv.data.timeHint = time;
+  return advanceBooking(ctx);
+}
+
+function onDate(ctx, text) {
+  const { clinic, conv, L, today } = ctx;
+  const say = (t, b) => ctx.replies.push(reply(t, b));
+  const d = conv.data;
+  const s = svc(clinic, d.service_id);
+  let date = null;
+  const n = P.pickNumber(text, (d.dateOptions || []).length);
+  if (n) date = d.dateOptions[n - 1];
+  else date = P.parseDate(text, today);
+  if (!date) {
+    if (deferToAI(ctx, text, { followUp: reply(L.askDate()), fallback: [reply(L.askDate())], allowActions: false })) return finish(ctx);
+    say(L.askDate()); return finish(ctx);
+  }
+  if (date < today) { say(L.pastDate()); return finish(ctx); }
+  if (!S.withinBookingWindow(clinic, date, nowInstant())) { say(L.tooFar(clinic.max_days_ahead || 14)); return finish(ctx); }
+  if (!S.isOpen(clinic, date)) {
+    const alts = openDatesWithSlots(clinic, S.addDays(date, 1), s.duration, 3);
+    d.dateOptions = alts; say(L.closedOn(date, today, alts)); return finish(ctx);
+  }
+  if (!slotsFor(clinic, date, s.duration).length) {
+    const alts = openDatesWithSlots(clinic, S.addDays(date, 1), s.duration, 3);
+    d.dateOptions = alts; say(L.noSlots(date, today, alts)); return finish(ctx);
+  }
+  d.date = date;
+  const time = P.parseTime(text); if (time) d.timeHint = time;
+  return advanceBooking(ctx);
+}
+
+function onTime(ctx, text) {
+  const { clinic, conv, L, today } = ctx;
+  const say = (t, b) => ctx.replies.push(reply(t, b));
+  const d = conv.data;
+  const s = svc(clinic, d.service_id);
+  const all = slotsFor(clinic, d.date, s.duration);
+  const n = P.pickNumber(text, (d.slots || []).length);
+  if (n) { d.time = d.slots[n - 1]; }
+  else {
+    // maybe they changed the date instead
+    const newDate = P.parseDate(text, today);
+    const parsed = P.parseTime(text);
+    if (newDate && newDate !== d.date && !parsed) { d.date = null; d.time = null; return onDate(ctx, text); }
+    if (newDate && newDate !== d.date && parsed) { d.date = null; d.time = null; d.timeHint = parsed; return onDate(ctx, text); }
+    if (!parsed) {
+      const ask = reply(L.askTime(d.date, today, d.slots || all.slice(0, 6)));
+      if (deferToAI(ctx, text, { followUp: ask, fallback: [ask], allowActions: false })) return finish(ctx);
+      say(ask.text); return finish(ctx);
+    }
+    if (parsed.time) {
+      if (!all.includes(parsed.time)) { d.slots = nearestSlots(all, parsed.time); say(L.timeTaken(parsed.time, d.slots)); return finish(ctx); }
+      d.time = parsed.time;
+    } else {
+      const f = all.filter(P.periodFilter(parsed.period));
+      d.slots = (f.length ? f : all).slice(0, 6);
+      say(f.length ? L.askTime(d.date, today, d.slots) : L.noSlotsPeriod(d.slots)); return finish(ctx);
+    }
+  }
+  if (!all.includes(d.time)) { d.time = null; d.slots = all.slice(0, 6); say(L.askTime(d.date, today, d.slots)); return finish(ctx); }
+  return d.mode === 'resched' ? confirmReschedule(ctx) : advanceBooking(ctx);
+}
+
+function onName(ctx, text) {
+  const { conv, L } = ctx;
+  const name = P.extractName(text);
+  if (!name || AI.looksLikeQuestion(text)) {
+    if (deferToAI(ctx, text, { followUp: reply(L.askName()), fallback: [reply(L.askName())], allowActions: false })) return finish(ctx);
+    if (!name) { ctx.replies.push(reply(L.askName())); return finish(ctx); }
+  }
+  conv.data.name = name; conv.name = name;
+  return advanceBooking(ctx);
+}
+
+function onConfirm(ctx, text, buttonId) {
+  const { clinic, conv, L, today, events } = ctx;
+  const say = (t, b) => ctx.replies.push(reply(t, b));
+  const d = conv.data;
+  if (buttonId === 'yes' || P.isYes(text)) {
+    const s = svc(clinic, d.service_id);
+    // re-check the slot is still free
+    const all = slotsFor(clinic, d.date, s.duration);
+    if (!all.includes(d.time)) {
+      const wanted = d.time; d.time = null; d.slots = nearestSlots(all, wanted || all[0] || '09:00');
+      conv.step = 'book_time'; say(L.timeTaken(wanted || '09:00', d.slots)); return finish(ctx);
+    }
+    if (d.mode === 'resched' && d.booking_id) {
+      const b = db.getBooking(d.booking_id);
+      b.date = d.date; b.time = d.time; b.patient_confirmed = 0; b.reminders_sent = [];
+      const updated = db.updateBooking(b);
+      events.push({ type: 'booking_rescheduled', booking: updated });
+      say(L.rescheduled(clinic, updated, s, today));
+    } else {
+      const b = db.createBooking({ clinic_id: clinic.id, phone: ctx.phone, name: d.name, service_id: s.id, date: d.date, time: d.time, duration: s.duration, source: ctx.source || 'whatsapp' });
+      events.push({ type: 'booking_created', booking: b });
+      say(L.booked(clinic, b, s, today));
+      if (clinic.deposit && clinic.deposit.enabled) say(L.deposit(clinic));
+    }
+    conv.data = {}; conv.step = 'idle';
+    return finish(ctx);
+  }
+  if (buttonId === 'no' || P.isNo(text)) { conv.step = 'fix_what'; say(L.notConfirmed()); return finish(ctx); }
+  // they may have typed a correction directly
+  const newDate = P.parseDate(text, today); const newTime = P.parseTime(text); const newSvc = P.matchService(text, clinic.services);
+  if (newDate || newTime || newSvc) {
+    if (newSvc) d.service_id = newSvc.id;
+    if (newDate) { d.date = newDate; d.time = null; }
+    if (newTime) { d.time = null; d.timeHint = newTime; }
+    return advanceBooking(ctx);
+  }
+  const s = svc(clinic, d.service_id);
+  say(L.confirm(clinic, { name: d.name, date: d.date, time: d.time }, s, today), L.confirmButtons());
+  return finish(ctx);
+}
+
+function onFixWhat(ctx, text) {
+  const { clinic, conv, L } = ctx;
+  const n = P.pickNumber(text, 5);
+  const d = conv.data;
+  if (n === 1) { d.service_id = null; d.time = null; return advanceBooking(ctx); }
+  if (n === 2) { d.date = null; d.time = null; return advanceBooking(ctx); }
+  if (n === 3) { d.time = null; return advanceBooking(ctx); }
+  if (n === 4) { d.name = null; conv.name = null; conv.step = 'book_name'; ctx.replies.push(reply(L.askName())); return finish(ctx); }
+  if (n === 5 || P.isNo(text)) { conv.data = {}; conv.step = 'menu'; ctx.replies.push(reply(L.menu(), L.menuButtons())); return finish(ctx); }
+  // free-text correction
+  const newDate = P.parseDate(text, ctx.today); const newTime = P.parseTime(text); const newSvc = P.matchService(text, clinic.services);
+  if (newSvc) d.service_id = newSvc.id;
+  if (newDate) { d.date = newDate; d.time = null; }
+  if (newTime) { d.time = null; d.timeHint = newTime; }
+  if (newDate || newTime || newSvc) return advanceBooking(ctx);
+  ctx.replies.push(reply(L.notConfirmed())); return finish(ctx);
+}
+
+// ---- manage (reschedule / cancel) ----
+function startManage(ctx, intent) {
+  const { clinic, phone, conv, L, today } = ctx;
+  const say = (t, b) => ctx.replies.push(reply(t, b));
+  const nowP = S.localParts(nowInstant(), clinic.timezone);
+  const bs = db.upcomingForPhone(clinic.id, phone, today, nowP.timeStr);
+  if (!bs.length) { say(L.noUpcoming()); conv.step = 'menu'; return finish(ctx); }
+  if (bs.length === 1) {
+    const b = bs[0];
+    if (intent === 'reschedule') return startReschedule(ctx, b);
+    if (intent === 'cancel') { conv.data = { booking_id: b.id }; conv.step = 'cancel_confirm'; say(L.cancelConfirm(b, today)); return finish(ctx); }
+    conv.data = { booking_id: b.id }; conv.step = 'manage_what'; say(L.manageWhat(b, svc(clinic, b.service_id), today)); return finish(ctx);
+  }
+  conv.data = { bookingOptions: bs.map(b => b.id), pendingIntent: intent || null }; conv.step = 'manage_pick';
+  say(L.yourBookings(bs, clinic.services, today)); return finish(ctx);
+}
+
+function onManagePick(ctx, text) {
+  const { clinic, conv, L, today } = ctx;
+  const n = P.pickNumber(text, (conv.data.bookingOptions || []).length);
+  if (!n) { const bs = conv.data.bookingOptions.map(id => db.getBooking(id)); ctx.replies.push(reply(L.yourBookings(bs, clinic.services, today))); return finish(ctx); }
+  const b = db.getBooking(conv.data.bookingOptions[n - 1]);
+  const pi = conv.data.pendingIntent;
+  if (pi === 'reschedule') return startReschedule(ctx, b);
+  if (pi === 'cancel') { conv.data = { booking_id: b.id }; conv.step = 'cancel_confirm'; ctx.replies.push(reply(L.cancelConfirm(b, today))); return finish(ctx); }
+  conv.data = { booking_id: b.id }; conv.step = 'manage_what';
+  ctx.replies.push(reply(L.manageWhat(b, svc(clinic, b.service_id), today))); return finish(ctx);
+}
+
+function onManageWhat(ctx, text, intent) {
+  const { clinic, conv, L, today } = ctx;
+  const b = db.getBooking(conv.data.booking_id);
+  const n = P.pickNumber(text, 3);
+  if (n === 1 || intent === 'reschedule') return startReschedule(ctx, b);
+  if (n === 2 || intent === 'cancel') { conv.step = 'cancel_confirm'; ctx.replies.push(reply(L.cancelConfirm(b, today))); return finish(ctx); }
+  if (n === 3 || P.isNo(text)) { conv.data = {}; conv.step = 'idle'; ctx.replies.push(reply(L.thanks())); return finish(ctx); }
+  ctx.replies.push(reply(L.manageWhat(b, svc(clinic, b.service_id), today))); return finish(ctx);
+}
+
+function startReschedule(ctx, b) {
+  const { clinic, conv, L, today } = ctx;
+  conv.data = { mode: 'resched', booking_id: b.id, service_id: b.service_id, name: b.name };
+  conv.step = 'book_date';
+  const s = svc(clinic, b.service_id);
+  conv.data.dateOptions = openDatesWithSlots(clinic, today, s.duration, 3);
+  ctx.replies.push(reply(L.askDateWithOptions(conv.data.dateOptions, today)));
+  return finish(ctx);
+}
+
+function confirmReschedule(ctx) {
+  const { clinic, conv, L, today } = ctx;
+  const d = conv.data; const s = svc(clinic, d.service_id);
+  conv.step = 'book_confirm';
+  ctx.replies.push(reply(L.confirm(clinic, { name: d.name, date: d.date, time: d.time }, s, today), L.confirmButtons()));
+  return finish(ctx);
+}
+
+function onCancelConfirm(ctx, text, buttonId) {
+  const { conv, L, events } = ctx;
+  const b = db.getBooking(conv.data.booking_id);
+  if (buttonId === 'yes' || P.isYes(text)) {
+    b.status = 'cancelled'; const u = db.updateBooking(b);
+    events.push({ type: 'booking_cancelled', booking: u });
+    conv.data = {}; conv.step = 'idle'; ctx.replies.push(reply(L.cancelled(u))); return finish(ctx);
+  }
+  conv.data = {}; conv.step = 'menu'; ctx.replies.push(reply(L.menu(), L.menuButtons())); return finish(ctx);
+}
+
+function doHandoff(ctx) {
+  const { clinic, conv, L, events } = ctx;
+  conv.handoff_until = Date.now() + (clinic.handoff_minutes || 60) * 60000;
+  conv.data = { handoff_notified: false }; conv.step = 'idle';
+  events.push({ type: 'handoff', phone: ctx.phone, name: conv.name });
+  ctx.replies.push(reply(L.handoff(clinic)));
+  return finish(ctx);
+}
+
+// Build a reminder for a booking (used by the scheduler).
+function buildReminder(clinic, booking, hoursBefore) {
+  const conv = db.getConversation(clinic.id, booking.phone);
+  const lang = conv.lang || clinic.default_language || 'ms';
+  const L = M[lang];
+  const today = S.todayStr(clinic, nowInstant());
+  const s = svc(clinic, booking.service_id);
+  conv.last_reminder_booking_id = booking.id; conv.step = 'idle'; conv.data = {};
+  db.saveConversation(conv);
+  const text = L.reminder(clinic, booking, s, hoursBefore, today);
+  db.logMessage(clinic.id, booking.phone, 'out', text);
+  const { fmtDate, fmtTime, svcName } = __req("./engine/messages");
+  const out = hoursBefore >= 12 ? reply(text, L.reminderButtons()) : reply(text);
+  // Template parameters for the WhatsApp Cloud API (see README "Message templates"): {{1}}..{{5}}
+  out.template = hoursBefore >= 12
+    ? { key: 'reminder_24h', lang, params: [booking.name || '', clinic.short_name, fmtDate(booking.date, lang, today), fmtTime(booking.time, lang), svcName(s, lang)] }
+    : { key: 'reminder_2h', lang, params: [booking.name || '', clinic.short_name, String(hoursBefore), fmtTime(booking.time, lang), clinic.address] };
+  return out;
+}
+
+module.exports = { handle, buildReminder, AI };
+
+};
+__defs["./store/db"] = function(module, exports){
+// In-memory store with the same interface as db.js. Used by the standalone browser demo.
+// Persists to localStorage when available (per viewer, best effort).
+const KEY = 'klinikbot_demo_v1';
+let state = { conversations: {}, bookings: [], messages: [], nextId: 1 };
+
+function load() { try { const raw = globalThis.localStorage && localStorage.getItem(KEY); if (raw) state = JSON.parse(raw); } catch (e) { /* ignore */ } }
+function persist() { try { globalThis.localStorage && localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* ignore */ } }
+load();
+const now = () => Date.now();
+const ck = (c, p) => `${c}|${p}`;
+const clone = o => JSON.parse(JSON.stringify(o));
+
+function getConversation(clinicId, phone) {
+  const c = state.conversations[ck(clinicId, phone)];
+  return c ? clone(c) : { clinic_id: clinicId, phone, lang: null, step: 'idle', data: {}, name: null, handoff_until: null, last_reminder_booking_id: null };
+}
+function saveConversation(c) { state.conversations[ck(c.clinic_id, c.phone)] = clone({ ...c, updated_at: now() }); persist(); }
+
+function createBooking(b) {
+  const t = now();
+  const row = { id: state.nextId++, clinic_id: b.clinic_id, phone: b.phone, name: b.name || null, service_id: b.service_id, date: b.date, time: b.time, duration: b.duration,
+    status: 'confirmed', patient_confirmed: 0, reminders_sent: [], source: b.source || 'demo', created_at: t, updated_at: t };
+  state.bookings.push(row); persist(); return clone(row);
+}
+function getBooking(id) { const r = state.bookings.find(b => b.id === Number(id)); return r ? clone(r) : null; }
+function updateBooking(b) {
+  const i = state.bookings.findIndex(x => x.id === b.id);
+  if (i < 0) return null;
+  state.bookings[i] = clone({ ...state.bookings[i], name: b.name || null, service_id: b.service_id, date: b.date, time: b.time, duration: b.duration, status: b.status,
+    patient_confirmed: b.patient_confirmed ? 1 : 0, reminders_sent: b.reminders_sent || [], updated_at: now() });
+  persist(); return clone(state.bookings[i]);
+}
+const byTime = (a, b) => (a.date + a.time).localeCompare(b.date + b.time);
+function bookingsOnDate(clinicId, date) { return clone(state.bookings.filter(b => b.clinic_id === clinicId && b.date === date && b.status === 'confirmed')); }
+function upcomingForPhone(clinicId, phone, todayStr, nowHHMM) {
+  return clone(state.bookings.filter(b => b.clinic_id === clinicId && b.phone === phone && b.status === 'confirmed' && (b.date > todayStr || (b.date === todayStr && b.time >= nowHHMM))).sort(byTime).slice(0, 5));
+}
+function allUpcoming(clinicId, todayStr) { return clone(state.bookings.filter(b => b.clinic_id === clinicId && b.status === 'confirmed' && b.date >= todayStr).sort(byTime)); }
+function listBookings(clinicId, limit = 50) { return clone(state.bookings.filter(b => b.clinic_id === clinicId).sort((a, b) => byTime(b, a)).slice(0, limit)); }
+function lastNameForPhone(clinicId, phone) { const r = [...state.bookings].reverse().find(b => b.clinic_id === clinicId && b.phone === phone && b.name); return r ? r.name : null; }
+
+function logMessage(clinicId, phone, direction, text) { state.messages.push({ id: state.messages.length + 1, clinic_id: clinicId, phone, direction, text, created_at: now() }); if (state.messages.length > 2000) state.messages.splice(0, 500); persist(); }
+function recentMessages(clinicId, phone, limit = 50) { return clone(state.messages.filter(m => m.clinic_id === clinicId && m.phone === phone).slice(-limit)); }
+
+function resetPhone(clinicId, phone) {
+  delete state.conversations[ck(clinicId, phone)];
+  state.bookings = state.bookings.filter(b => !(b.clinic_id === clinicId && b.phone === phone));
+  state.messages = state.messages.filter(m => !(m.clinic_id === clinicId && m.phone === phone));
+  persist();
+}
+function resetAll() { state = { conversations: {}, bookings: [], messages: [], nextId: 1 }; persist(); }
+function stats(clinicId, todayStr, weekStartStr) {
+  const bs = state.bookings.filter(b => b.clinic_id === clinicId);
+  return {
+    today: bs.filter(b => b.date === todayStr && b.status === 'confirmed').length,
+    this_week: bs.filter(b => b.date >= weekStartStr && b.status === 'confirmed').length,
+    confirmed_by_patient: bs.filter(b => b.status === 'confirmed' && b.patient_confirmed).length,
+    total: bs.length,
+  };
+}
+
+module.exports = { DB_PATH: 'memory', getConversation, saveConversation, createBooking, getBooking, updateBooking, bookingsOnDate, upcomingForPhone, allUpcoming, listBookings, lastNameForPhone, logMessage, recentMessages, resetPhone, resetAll, stats };
+
+};
+__defs["./store"] = function(module, exports){
+// Store registry: the engine talks to whichever store the host registers (SQLite on Node, Durable Object SQLite on
+// Cloudflare, in-memory in the browser demo). On Node/Workers the store is bound per request with AsyncLocalStorage so
+// several clinics can share one process safely; elsewhere a single global store is used.
+let fallback = null;
+let als = null;
+try { const { AsyncLocalStorage } = __req("node:async_hooks"); als = AsyncLocalStorage ? new AsyncLocalStorage() : null; } catch (e) { als = null; }
+
+function current() {
+  const s = (als && als.getStore()) || fallback;
+  if (!s) throw new Error('No store registered: call store.use(impl) or store.run(impl, fn)');
+  return s;
+}
+function use(impl) { fallback = impl; }
+function run(impl, fn) { return als ? als.run(impl, fn) : (fallback = impl, fn()); }
+
+const METHODS = ['getConversation', 'saveConversation', 'createBooking', 'getBooking', 'updateBooking', 'bookingsOnDate', 'upcomingForPhone',
+  'allUpcoming', 'listBookings', 'lastNameForPhone', 'logMessage', 'recentMessages', 'resetPhone', 'stats'];
+const api = { use, run, current };
+for (const m of METHODS) api[m] = (...a) => current()[m](...a);
+Object.defineProperty(api, 'DB_PATH', { get: () => current().DB_PATH });
+module.exports = api;
+
+};
+__defs["./store/index"] = function(module, exports){
+// Store registry: the engine talks to whichever store the host registers (SQLite on Node, Durable Object SQLite on
+// Cloudflare, in-memory in the browser demo). On Node/Workers the store is bound per request with AsyncLocalStorage so
+// several clinics can share one process safely; elsewhere a single global store is used.
+let fallback = null;
+let als = null;
+try { const { AsyncLocalStorage } = __req("node:async_hooks"); als = AsyncLocalStorage ? new AsyncLocalStorage() : null; } catch (e) { als = null; }
+
+function current() {
+  const s = (als && als.getStore()) || fallback;
+  if (!s) throw new Error('No store registered: call store.use(impl) or store.run(impl, fn)');
+  return s;
+}
+function use(impl) { fallback = impl; }
+function run(impl, fn) { return als ? als.run(impl, fn) : (fallback = impl, fn()); }
+
+const METHODS = ['getConversation', 'saveConversation', 'createBooking', 'getBooking', 'updateBooking', 'bookingsOnDate', 'upcomingForPhone',
+  'allUpcoming', 'listBookings', 'lastNameForPhone', 'logMessage', 'recentMessages', 'resetPhone', 'stats'];
+const api = { use, run, current };
+for (const m of METHODS) api[m] = (...a) => current()[m](...a);
+Object.defineProperty(api, 'DB_PATH', { get: () => current().DB_PATH });
+module.exports = api;
+
+};
+__defs["node:async_hooks"] = function(module, exports){
+// Browser stand-in for node:* modules the store registry probes for.
+module.exports = {};
+
+};
+__req('./store').use(__req('./store/db'));
+window.KB = { clinic: {"id":"demo-dental","name":{"ms":"Klinik Pergigian Sinar","en":"Sinar Dental Clinic","zh":"Sinar 牙科诊所"},"short_name":"Klinik Sinar","phone":"+60 3-7800 0000","address":"12, Jalan SS2/24, SS2, 47300 Petaling Jaya, Selangor","maps_url":"https://maps.google.com/?q=12+Jalan+SS2%2F24+Petaling+Jaya","waze_url":"https://waze.com/ul?q=12+Jalan+SS2%2F24+Petaling+Jaya","timezone":"Asia/Kuala_Lumpur","default_language":"ms","hours":{"mon":["09:00","18:00"],"tue":["09:00","18:00"],"wed":["09:00","18:00"],"thu":["09:00","18:00"],"fri":["09:00","18:00"],"sat":["09:00","14:00"],"sun":null},"lunch":["13:00","14:00"],"slot_minutes":30,"min_lead_minutes":60,"max_days_ahead":14,"services":[{"id":"checkup","ms":"Pemeriksaan & Scaling","en":"Check-up & Scaling","duration":30,"price_from":80,"zh":"检查与洗牙"},{"id":"filling","ms":"Tampalan Gigi","en":"Filling","duration":30,"price_from":120,"zh":"补牙"},{"id":"extraction","ms":"Cabut Gigi","en":"Extraction","duration":30,"price_from":150,"zh":"拔牙"},{"id":"whitening","ms":"Pemutihan Gigi","en":"Teeth Whitening","duration":60,"price_from":600,"zh":"牙齿美白"},{"id":"braces","ms":"Konsultasi Braces","en":"Braces Consultation","duration":30,"price_from":0,"zh":"牙套咨询"}],"deposit":{"enabled":true,"amount":50,"note":{"ms":"Deposit RM50 akan ditolak daripada bil rawatan anda.","en":"The RM50 deposit is deducted from your treatment bill.","zh":"RM50 订金将从治疗费用中扣除。"},"duitnow_url":""},"reminders":{"hours_before":[24,2]},"staff_whatsapp":"+60 12-345 6789","handoff_minutes":60,"ai":{"enabled":true,"persona":"Aina","knowledge":["Dentists: Dr. Farah (general & cosmetic) and Dr. Kevin Tan (braces). Patients may request a dentist; staff will confirm availability.","Parking: free parking in front of the shoplot and along Jalan SS2/24; weekday lunch hours are busy.","Payment: cash, debit/credit card, DuitNow QR, Touch 'n Go eWallet. We are not a panel clinic for any insurer; we issue an itemised receipt for patients to claim themselves.","Children are welcome; the clinic sees children from age 3. A parent must accompany anyone under 18.","Scaling: usually 30 minutes, usually painless; mild sensitivity for a day or two afterwards is normal. Recommended every 6 months.","Fillings and extractions are done under local anaesthetic; numbness lasts 2–3 hours. Avoid hot food until it wears off.","Teeth whitening is not recommended during pregnancy or breastfeeding. Routine check-ups and scaling are safe during pregnancy; we avoid X-rays in the first trimester unless urgent.","Braces consultation is free. Metal braces from RM4,500; clear aligners from RM8,000; instalment plans available, ask staff.","We provide a medical certificate (MC) for treatments that need rest, at the dentist's discretion.","Walk-ins are accepted when there is a free slot but booked patients are seen first.","Languages at the counter: Bahasa Melayu, English, Mandarin, Cantonese.","Emergencies (severe pain, swelling of the face, knocked-out tooth): call the clinic immediately during opening hours; after hours go to the nearest hospital emergency department.","Chinese-speaking patients are welcome; Dr. Kevin Tan speaks Mandarin and Cantonese."]}}, db: __req('./store/db'), store: __req('./store'), S: __req('./engine/scheduling'), ...__req('./engine/conversation') };
+})();
+
+</script>
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  window.addEventListener('error', e => { try { const c = $('#chat'); if (c) { const d = document.createElement('div'); d.className = 'msg in'; d.textContent = '⚠️ Error: ' + (e.message || e); c.appendChild(d); } } catch (_) {} });
+  window.addEventListener('unhandledrejection', e => { try { const c = $('#chat'); if (c) { const d = document.createElement('div'); d.className = 'msg in'; d.textContent = '⚠️ Error: ' + (e.reason && e.reason.message || e.reason); c.appendChild(d); } } catch (_) {} });
+  let phone = 'demo-' + Math.random().toString(36).slice(2, 8);
+  try { phone = sessionStorage.getItem('kb_phone') || phone; sessionStorage.setItem('kb_phone', phone); } catch (e) { /* storage unavailable */ }
+  let lang = 'ms', clinic = null, busy = false;
+
+  // ---------- API adapter: talks to the server, or runs the engine locally in the browser (standalone build) ----------
+  const j = (url, body) => fetch(url, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : undefined).then(r => r.json());
+  const remoteApi = {
+    message: (p) => j('/api/demo/message', p),
+    state: (ph) => j(`/api/demo/state?phone=${encodeURIComponent(ph)}`),
+    reminder: (booking_id, hours) => j('/api/demo/reminder', { booking_id, hours }),
+    reset: (ph) => j('/api/demo/reset', { phone: ph }),
+    booking: (booking_id, status) => j('/api/demo/booking', { booking_id, status }),
+    subscribe: () => {},
+  };
+  const localApi = (KB) => {
+    const { clinic: C, db, S, handle, buildReminder, AI } = KB;
+    // Claude answers free-text questions through the artifact's built-in access (viewer consents on first use).
+    (async () => {
+      const pill = $('#aiPill'), label = $('#aiLabel');
+      const off = (why) => { pill.classList.add('off'); label.textContent = 'AI answers: off' + (why ? ' · ' + why : ''); AI.setCompleter(null); };
+      try {
+        const sample = window.claude && window.claude.use ? await window.claude.use('sample') : null;
+        if (!sample) return off('open the live link to enable');
+        AI.setCompleter(async (system, messages) => {
+          try {
+            const { text } = await sample([{ role: 'user', content: system }, ...messages], { modelTier: 'quick', cache: false });
+            return text;
+          } catch (e) {
+            if (e && (e.code === 'not_granted' || e.code === 'sampling_disabled' || e.code === 'not_declared' || e.code === 'capability_disabled')) off('not allowed for this viewer');
+            else if (e && e.code === 'rate_limited') label.textContent = 'AI answers: paused (rate limit) — try again in a minute';
+            throw e;
+          }
+        });
+        label.textContent = 'AI answers: on (Claude)';
+      } catch (e) { off(); }
+    })();
+    const state = (ph) => { const today = S.todayStr(C); return { clinic: C, today, now: S.localParts(new Date(), C.timezone).timeStr, messages: ph ? db.recentMessages(C.id, ph, 100) : [], bookings: db.listBookings(C.id, 40), stats: db.stats(C.id, today, S.startOfWeek(today)), conversation: ph ? db.getConversation(C.id, ph) : null }; };
+    return {
+      message: async (p) => { const out = await handle(C, p.phone, { text: p.text, buttonId: p.buttonId }, { source: 'demo' }); return { replies: out.replies, events: out.events, state: state(p.phone) }; },
+      state: async (ph) => state(ph),
+      reminder: async (booking_id, hours) => { const b = db.getBooking(booking_id); const msg = buildReminder(C, b, Number(hours)); b.reminders_sent = [...new Set([...b.reminders_sent, Number(hours)])]; db.updateBooking(b); return { sent: msg, state: state(b.phone) }; },
+      reset: async (ph) => { db.resetPhone(C.id, ph); return { ok: true, state: state(ph) }; },
+      booking: async (booking_id, status) => { const b = db.getBooking(booking_id); b.status = status; db.updateBooking(b); return { ok: true, state: state(b.phone) }; },
+      subscribe: () => {},
+    };
+  };
+  const API = window.KB ? localApi(window.KB) : remoteApi;
+
+  const CHIPS = {
+    ms: ['nak scaling esok petang', 'tempah cabut gigi sabtu 10am', 'scaling sakit tak?', 'ada parking?', 'korang panel insurans ke?', 'boleh bawa anak 4 tahun?', 'waktu operasi?', 'nak tukar temujanji', 'boleh cakap dengan staf?'],
+    en: ['book a filling next monday 3pm', 'check-up tomorrow morning', 'does scaling hurt?', 'is there parking?', 'do you accept insurance?', 'can I whiten my teeth while pregnant?', 'where are you located?', 'reschedule my appointment', 'can I talk to staff?'],
+    zh: ['我要明天下午洗牙', '预约下周三拔牙', '洗牙会痛吗？', '有停车位吗？', '你们有panel保险吗？', '可以带4岁小孩来吗？', '营业时间？', '我要改时间', '我要找真人'],
+  };
+  const STATUS = { ms: 'online · balas dalam 1 saat', en: 'online · replies in 1 second', zh: '在线 · 1秒内回复' };
+  const SWITCH_WORD = { ms: 'bahasa melayu', en: 'english', zh: '中文' };
+  const HELLO = { ms: 'hai', en: 'hi', zh: '你好' };
+
+  // ---------- rendering ----------
+  function fmt(text) {
+    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return esc(text)
+      .replace(/(https?:\/\/[^\s)]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>')
+      .replace(/\*([^*\n]+)\*/g, '<b>$1</b>')
+      .replace(/_([^_\n]+)_/g, '<i>$1</i>');
+  }
+  const stamp = () => new Date().toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
+  function addMsg(dir, text, { reminder = false, buttons = null } = {}) {
+    const chat = $('#chat');
+    document.querySelectorAll('.qr').forEach(q => q.remove());
+    const el = document.createElement('div');
+    el.className = `msg ${dir}${reminder ? ' reminder' : ''}`;
+    el.innerHTML = fmt(text) + `<span class="t">${stamp()}${dir === 'out' ? ' ✓✓' : ''}</span>`;
+    chat.appendChild(el);
+    if (buttons && buttons.length) {
+      const qr = document.createElement('div'); qr.className = 'qr';
+      for (const b of buttons) { const btn = document.createElement('button'); btn.textContent = b.title; btn.onclick = () => send(b.title, b.id); qr.appendChild(btn); }
+      chat.appendChild(qr);
+    }
+    chat.scrollTop = chat.scrollHeight;
+  }
+  function typing(on) {
+    let t = $('#typing');
+    if (on && !t) { t = document.createElement('div'); t.id = 'typing'; t.className = 'typing'; t.innerHTML = '<i></i><i></i><i></i>'; $('#chat').appendChild(t); $('#chat').scrollTop = 1e9; }
+    if (!on && t) t.remove();
+  }
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  async function showReplies(replies, reminder = false) {
+    for (const r of replies) {
+      typing(true); await sleep(Math.min(1400, 350 + r.text.length * 6)); typing(false);
+      addMsg('in', r.text, { reminder, buttons: r.buttons });
+    }
+  }
+  function toast(html) { const t = document.createElement('div'); t.className = 'toast'; t.innerHTML = html; $('#toasts').appendChild(t); setTimeout(() => t.remove(), 6000); }
+
+  // ---------- state / dashboard ----------
+  const svcName = id => { const s = (clinic?.services || []).find(x => x.id === id); return s ? s[lang] || s.en : id; };
+  const fmtDate = ds => { const [y, m, d] = ds.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('en-MY', { weekday: 'short', day: 'numeric', month: 'short' }); };
+  const fmtTime = t => { const [h, m] = t.split(':').map(Number); const h12 = h % 12 || 12; return `${h12}${m ? '.' + String(m).padStart(2, '0') : ''}${h >= 12 ? 'pm' : 'am'}`; };
+  function renderState(st) {
+    clinic = st.clinic;
+    if (!window.KB && typeof st.ai === 'boolean') { $('#aiPill').classList.toggle('off', !st.ai); $('#aiLabel').textContent = st.ai ? 'AI answers: on (Claude)' : 'AI answers: off · set ANTHROPIC_API_KEY'; }
+    $('#clinicName').textContent = clinic.name[lang] || clinic.name.en;
+    $('#clinicStatus').textContent = STATUS[lang] || STATUS.en;
+    $('#dashName').textContent = clinic.short_name;
+    $('#avatar').textContent = clinic.short_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    $('#sToday').textContent = st.stats.today; $('#sWeek').textContent = st.stats.this_week; $('#sConf').textContent = st.stats.confirmed_by_patient;
+    const rows = st.bookings;
+    if (!rows.length) { $('#bookings').innerHTML = '<div class="empty">No bookings yet. Make one in the chat.</div>'; return; }
+    $('#bookings').innerHTML = `<table><thead><tr><th>#</th><th>Patient</th><th>Treatment</th><th>When</th><th>Status</th><th></th></tr></thead><tbody>${
+      rows.map(b => `<tr>
+        <td>${b.id}</td><td><b>${b.name || '—'}</b><br><span style="color:var(--muted);font-size:12px">${b.phone === phone ? 'this demo' : b.phone}</span></td>
+        <td>${svcName(b.service_id)}</td><td>${fmtDate(b.date)}<br><span style="color:var(--muted)">${fmtTime(b.time)}</span></td>
+        <td><span class="pill ${b.status === 'confirmed' && b.patient_confirmed ? 'patient' : b.status}">${b.status === 'confirmed' ? (b.patient_confirmed ? 'patient confirmed' : 'confirmed') : b.status.replace('_', ' ')}</span>
+            ${b.reminders_sent.length ? `<br><span style="color:var(--muted);font-size:11px">reminders: ${b.reminders_sent.map(h => h + 'h').join(', ')}</span>` : ''}</td>
+        <td><div class="row-actions">${b.status === 'confirmed' ? `
+          <button class="btn small" data-rem="24" data-id="${b.id}">Send 24h reminder</button>
+          <button class="btn small" data-rem="2" data-id="${b.id}">Send 2h reminder</button>
+          <button class="btn small ghost" data-status="completed" data-id="${b.id}">Done</button>
+          <button class="btn small ghost" data-status="no_show" data-id="${b.id}">No-show</button>` : ''}</div></td>
+      </tr>`).join('')}</tbody></table>`;
+  }
+  async function refresh() { const st = await API.state(phone); renderState(st); return st; }
+
+  // ---------- send ----------
+  async function send(text, buttonId) {
+    if (busy || !text) return; busy = true;
+    addMsg('out', text);
+    $('#input').value = '';
+    try {
+      const out = await API.message({ phone, text, buttonId });
+      await showReplies(out.replies);
+      renderState(out.state);
+      for (const ev of out.events) {
+        if (ev.type === 'booking_created') toast(`🟢 <b>New booking #${ev.booking.id}</b> — ${ev.booking.name}, ${fmtDate(ev.booking.date)} ${fmtTime(ev.booking.time)}. Saved to the clinic calendar.`);
+        if (ev.type === 'booking_rescheduled') toast(`🔁 <b>Booking #${ev.booking.id} moved</b> to ${fmtDate(ev.booking.date)} ${fmtTime(ev.booking.time)}. Old slot freed.`);
+        if (ev.type === 'booking_cancelled') toast(`⚪ <b>Booking #${ev.booking.id} cancelled</b> — slot is free again.`);
+        if (ev.type === 'handoff') toast(`👩‍⚕️ <b>Staff alert</b> — patient asked for a human. Bot paused for this chat; clinic notified.`);
+        if (ev.type === 'patient_confirmed') toast(`✅ <b>Patient confirmed</b> attendance for booking #${ev.booking.id}.`);
+        if (ev.type === 'ai_answered') toast(`🤖 <b>Claude answered</b> a free-text question using the clinic's own info. Bookings still go through the script.`);
+      }
+    } catch (e) { addMsg('in', '⚠️ ' + (e && e.message || e)); }
+    finally { busy = false; }
+  }
+
+  // ---------- events (reminders pushed from server) ----------
+  API.subscribe(phone, async replies => { await showReplies(replies, true); refresh(); });
+
+  // ---------- wiring ----------
+  $('#compose').addEventListener('submit', e => { e.preventDefault(); send($('#input').value.trim()); });
+  $('#compose button').addEventListener('click', e => { e.preventDefault(); send($('#input').value.trim()); });
+  $('#input').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); send($('#input').value.trim()); } });
+  $('#input').addEventListener('focus', () => setTimeout(() => { try { $('#compose').scrollIntoView({ block: 'end', behavior: 'smooth' }); } catch (_) {} }, 250));
+  $('#langSeg').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    lang = b.dataset.lang; document.querySelectorAll('#langSeg button').forEach(x => x.classList.toggle('on', x === b));
+    renderChips(); send(SWITCH_WORD[lang] || 'english');
+  });
+  $('#resetBtn').addEventListener('click', async () => {
+    await API.reset(phone);
+    $('#chat').innerHTML = ''; await refresh(); send(HELLO[lang] || 'hi');
+  });
+  $('#bookings').addEventListener('click', async e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.rem) {
+      b.disabled = true;
+      const out = await API.reminder(Number(b.dataset.id), Number(b.dataset.rem));
+      const bk = out.state.bookings.find(x => x.id === Number(b.dataset.id));
+      if (bk && bk.phone === phone) await showReplies([out.sent], true);
+      else toast(`⏰ Reminder sent to ${bk ? bk.phone : 'patient'} (not this chat).`);
+      renderState(out.state);
+    }
+    if (b.dataset.status) { const out = await API.booking(Number(b.dataset.id), b.dataset.status); renderState(out.state); }
+  });
+  function renderChips() { $('#chips').innerHTML = (CHIPS[lang] || CHIPS.en).map(c => `<button class="chip">${c}</button>`).join(''); }
+  $('#chips').addEventListener('click', e => { const c = e.target.closest('.chip'); if (c) send(c.textContent); });
+
+  // ---------- boot ----------
+  (async () => {
+    renderChips();
+    const st = await refresh();
+    lang = (st.conversation && st.conversation.lang) || st.clinic.default_language || 'ms';
+    document.querySelectorAll('#langSeg button').forEach(x => x.classList.toggle('on', x.dataset.lang === lang)); renderChips();
+    if (st.messages.length) { for (const m of st.messages) addMsg(m.direction === 'in' ? 'out' : 'in', m.text); }
+    else send(HELLO[lang] || 'hi');
+  })();
+})();
+</script>

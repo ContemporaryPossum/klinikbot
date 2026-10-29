@@ -1,0 +1,34 @@
+# Cloudflare Workers config — free tier is enough for a clinic.
+# Deploy: `npx wrangler deploy` (or connect the GitHub repo in the Cloudflare dashboard → Workers → Create → Import repository).
+name = "klinikbot"
+main = "src/worker.js"
+compatibility_date = "2025-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Serves public/ (the demo page) as static files
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+# One Durable Object per clinic holds its SQLite database (free plan supports SQLite-backed DOs)
+[[durable_objects.bindings]]
+name = "CLINIC_DO"
+class_name = "ClinicDO"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ClinicDO"]
+
+# Reminder scheduler: every minute
+[triggers]
+crons = ["* * * * *"]
+
+# Plain variables. Secrets (WHATSAPP_TOKEN, ANTHROPIC_API_KEY, WHATSAPP_VERIFY_TOKEN, INTERNAL_TOKEN) go in
+# the dashboard → Settings → Variables & Secrets, or `npx wrangler secret put NAME`.
+[vars]
+CLINIC = "demo-dental"
+WHATSAPP_TEMPLATE_REMINDER_24H = "appt_reminder_24h"
+WHATSAPP_TEMPLATE_REMINDER_2H = "appt_reminder_2h"
+
+[observability]
+enabled = true

@@ -1,0 +1,128 @@
+{
+  "id": "demo-dental",
+  "name": {
+    "ms": "Klinik Pergigian Sinar",
+    "en": "Sinar Dental Clinic",
+    "zh": "Sinar 牙科诊所"
+  },
+  "short_name": "Klinik Sinar",
+  "phone": "+60 3-7800 0000",
+  "address": "12, Jalan SS2/24, SS2, 47300 Petaling Jaya, Selangor",
+  "maps_url": "https://maps.google.com/?q=12+Jalan+SS2%2F24+Petaling+Jaya",
+  "waze_url": "https://waze.com/ul?q=12+Jalan+SS2%2F24+Petaling+Jaya",
+  "timezone": "Asia/Kuala_Lumpur",
+  "default_language": "ms",
+  "hours": {
+    "mon": [
+      "09:00",
+      "18:00"
+    ],
+    "tue": [
+      "09:00",
+      "18:00"
+    ],
+    "wed": [
+      "09:00",
+      "18:00"
+    ],
+    "thu": [
+      "09:00",
+      "18:00"
+    ],
+    "fri": [
+      "09:00",
+      "18:00"
+    ],
+    "sat": [
+      "09:00",
+      "14:00"
+    ],
+    "sun": null
+  },
+  "lunch": [
+    "13:00",
+    "14:00"
+  ],
+  "slot_minutes": 30,
+  "min_lead_minutes": 60,
+  "max_days_ahead": 14,
+  "services": [
+    {
+      "id": "checkup",
+      "ms": "Pemeriksaan & Scaling",
+      "en": "Check-up & Scaling",
+      "duration": 30,
+      "price_from": 80,
+      "zh": "检查与洗牙"
+    },
+    {
+      "id": "filling",
+      "ms": "Tampalan Gigi",
+      "en": "Filling",
+      "duration": 30,
+      "price_from": 120,
+      "zh": "补牙"
+    },
+    {
+      "id": "extraction",
+      "ms": "Cabut Gigi",
+      "en": "Extraction",
+      "duration": 30,
+      "price_from": 150,
+      "zh": "拔牙"
+    },
+    {
+      "id": "whitening",
+      "ms": "Pemutihan Gigi",
+      "en": "Teeth Whitening",
+      "duration": 60,
+      "price_from": 600,
+      "zh": "牙齿美白"
+    },
+    {
+      "id": "braces",
+      "ms": "Konsultasi Braces",
+      "en": "Braces Consultation",
+      "duration": 30,
+      "price_from": 0,
+      "zh": "牙套咨询"
+    }
+  ],
+  "deposit": {
+    "enabled": true,
+    "amount": 50,
+    "note": {
+      "ms": "Deposit RM50 akan ditolak daripada bil rawatan anda.",
+      "en": "The RM50 deposit is deducted from your treatment bill.",
+      "zh": "RM50 订金将从治疗费用中扣除。"
+    },
+    "duitnow_url": ""
+  },
+  "reminders": {
+    "hours_before": [
+      24,
+      2
+    ]
+  },
+  "staff_whatsapp": "+60 12-345 6789",
+  "handoff_minutes": 60,
+  "ai": {
+    "enabled": true,
+    "persona": "Aina",
+    "knowledge": [
+      "Dentists: Dr. Farah (general & cosmetic) and Dr. Kevin Tan (braces). Patients may request a dentist; staff will confirm availability.",
+      "Parking: free parking in front of the shoplot and along Jalan SS2/24; weekday lunch hours are busy.",
+      "Payment: cash, debit/credit card, DuitNow QR, Touch 'n Go eWallet. We are not a panel clinic for any insurer; we issue an itemised receipt for patients to claim themselves.",
+      "Children are welcome; the clinic sees children from age 3. A parent must accompany anyone under 18.",
+      "Scaling: usually 30 minutes, usually painless; mild sensitivity for a day or two afterwards is normal. Recommended every 6 months.",
+      "Fillings and extractions are done under local anaesthetic; numbness lasts 2–3 hours. Avoid hot food until it wears off.",
+      "Teeth whitening is not recommended during pregnancy or breastfeeding. Routine check-ups and scaling are safe during pregnancy; we avoid X-rays in the first trimester unless urgent.",
+      "Braces consultation is free. Metal braces from RM4,500; clear aligners from RM8,000; instalment plans available, ask staff.",
+      "We provide a medical certificate (MC) for treatments that need rest, at the dentist's discretion.",
+      "Walk-ins are accepted when there is a free slot but booked patients are seen first.",
+      "Languages at the counter: Bahasa Melayu, English, Mandarin, Cantonese.",
+      "Emergencies (severe pain, swelling of the face, knocked-out tooth): call the clinic immediately during opening hours; after hours go to the nearest hospital emergency department.",
+      "Chinese-speaking patients are welcome; Dr. Kevin Tan speaks Mandarin and Cantonese."
+    ]
+  }
+}
