@@ -72,6 +72,7 @@ const M = {
     handoff: (c) => `Baik, saya maklumkan staf klinik sekarang. Mereka akan balas di sini sebentar lagi (waktu operasi). Terima kasih kerana menunggu 🙏`,
     handoffActive: () => `Staf kami akan balas sebentar lagi. Jika nak kembali ke menu automatik, taip *menu*.`,
     thanks: () => `Sama-sama! Jumpa nanti 😊`,
+    remindersOff: () => `Baik, peringatan untuk temujanji anda yang akan datang telah dimatikan. Taip *menu* bila-bila masa untuk menempah atau mengurus temujanji.`,
     fallback: () => `Maaf, saya tak faham. Taip *menu* untuk pilihan, atau terus beritahu, contoh: "nak scaling esok petang".`,
     reminder: (c, b, s, hrs, today) => hrs >= 12
       ? `⏰ *Peringatan temujanji esok*\n\nHai ${b.name || ''}, jumpa anda esok di ${c.short_name}:\n📅 ${fmtDate(b.date, 'ms', today)} jam ${fmtTime(b.time, 'ms')}\n🦷 ${svcName(s, 'ms')}\n\nBoleh datang?\n*1* – Ya, saya datang\n*2* – Tukar masa\n*3* – Batal`
@@ -111,6 +112,7 @@ const M = {
     handoff: (c) => `Sure, I've notified the clinic staff. They'll reply here shortly (during opening hours). Thanks for your patience 🙏`,
     handoffActive: () => `Our staff will reply shortly. To go back to the automated menu, type *menu*.`,
     thanks: () => `You're welcome! See you soon 😊`,
+    remindersOff: () => `Okay, reminders for your upcoming appointments are now off. Type *menu* any time to book or manage an appointment.`,
     fallback: () => `Sorry, I didn't catch that. Type *menu* for options, or just tell me, e.g. "scaling tomorrow afternoon".`,
     reminder: (c, b, s, hrs, today) => hrs >= 12
       ? `⏰ *Appointment reminder*\n\nHi ${b.name || ''}, see you tomorrow at ${c.short_name}:\n📅 ${fmtDate(b.date, 'en', today)} at ${fmtTime(b.time, 'en')}\n🦷 ${svcName(s, 'en')}\n\nCan you make it?\n*1* – Yes, I'll be there\n*2* – Reschedule\n*3* – Cancel`
@@ -150,6 +152,7 @@ const M = {
     handoff: (c) => `好的，我已通知诊所前台，他们会在营业时间内尽快在这里回复您。谢谢耐心等待 🙏`,
     handoffActive: () => `前台会尽快回复您。如需返回自动菜单，请输入 *菜单*。`,
     thanks: () => `不客气！到时见 😊`,
+    remindersOff: () => `好的，您即将到来的预约提醒已关闭。随时输入 *菜单* 即可预约或管理预约。`,
     fallback: () => `不好意思，我没听懂。输入 *菜单* 查看选项，或直接告诉我，例如：“明天下午洗牙”。`,
     reminder: (c, b, s, hrs, today) => hrs >= 12
       ? `⏰ *预约提醒*\n\n${b.name || ''}您好，明天在 ${c.short_name} 见：\n📅 ${fmtDate(b.date, 'zh', today)} ${fmtTime(b.time, 'zh')}\n🦷 ${svcName(s, 'zh')}\n\n请问能准时到吗？\n*1* – 可以，我会到\n*2* – 更改时间\n*3* – 取消`

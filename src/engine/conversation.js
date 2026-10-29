@@ -64,6 +64,20 @@ async function handle(clinic, phone, input, opts = {}) {
     return finish(ctx);
   }
 
+  // global: opt out of reminders (marks every upcoming booking as already reminded)
+  if (/^(stop|berhenti|henti|unsubscribe|停止|停止提醒|取消提醒|不要提醒)$/.test(t)) {
+    const hoursList = (clinic.reminders && clinic.reminders.hours_before) || [24, 2];
+    const nowP = S.localParts(nowInstant(), clinic.timezone);
+    for (const b of db.upcomingForPhone(clinic.id, phone, today, nowP.timeStr)) {
+      b.reminders_sent = [...new Set([...b.reminders_sent, ...hoursList])];
+      db.updateBooking(b);
+    }
+    conv.data = {}; conv.step = 'idle'; conv.last_reminder_booking_id = null;
+    events.push({ type: 'reminders_off', phone });
+    say(L.remindersOff());
+    return finish(ctx);
+  }
+
   // handoff active: stay quiet after first notice
   if (conv.handoff_until && conv.handoff_until > Date.now()) {
     if (!conv.data.handoff_notified) { conv.data.handoff_notified = true; say(L.handoffActive()); }

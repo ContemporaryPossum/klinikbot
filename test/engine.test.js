@@ -261,3 +261,22 @@ test('ZH: reminder and quick reply', async () => {
   assert.match(r.text, /明天见/);
   assert.strictEqual(db.getBooking(b.id).patient_confirmed, 1);
 });
+
+test('Opt-out: "stop" switches off reminders for upcoming bookings (BM/EN/ZH)', async () => {
+  db.resetPhone(clinic.id, '690');
+  const b = db.createBooking({ clinic_id: clinic.id, phone: '690', name: 'Opt Out', service_id: 'checkup', date: '2031-03-04', time: '10:00', duration: 30, source: 'test' });
+  let r = await chat('690', 'stop');
+  assert.match(r.text, /reminders .* off|peringatan .* dimatikan/i);
+  assert.ok(r.events.some(e => e.type === 'reminders_off'));
+  assert.deepStrictEqual(db.getBooking(b.id).reminders_sent.sort(), [2, 24]);
+  const S2 = require('../src/engine/scheduling');
+  const R = require('../src/reminders');
+  const sent = await R.runOnce(clinic, async () => { throw new Error('should not send'); }, { info() {}, error() {} }, S2.toInstant('2031-03-03', '10:30', clinic.timezone));
+  assert.strictEqual(sent.filter(s => s.booking_id === b.id).length, 0);
+  db.resetPhone(clinic.id, '691');
+  r = await chat('691', '停止提醒');
+  assert.match(r.text, /提醒已关闭/);
+  db.resetPhone(clinic.id, '692');
+  r = await chat('692', 'berhenti');
+  assert.match(r.text, /dimatikan/);
+});

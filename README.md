@@ -66,7 +66,9 @@ App dashboard → **WhatsApp → Configuration → Webhook → Edit**:
 - Verify token: the same `WHATSAPP_VERIFY_TOKEN` you set
 - Save → then **Manage** → subscribe to **messages**.
 
-Now WhatsApp "hai" to the test number from your phone. The bot should reply with the menu within 2 seconds. Check the server logs if not.
+**Publish the app (required).** Meta only delivers *test* webhooks while an app is unpublished — real WhatsApp messages (even from your own test numbers) are dropped silently. In the app dashboard: **App settings → Basic** → fill in App domain (`klinikbot.<sub>.workers.dev`), Privacy Policy URL (`https://<your-url>/privacy.html`), Terms of Service URL (`https://<your-url>/terms.html`), Category (Business / Messaging), Save → then click **Publish** at the top of the dashboard. Both legal pages are served by this repo from `public/`; edit them for your company name before going live with clients.
+
+Now WhatsApp "hai" to the test number from your phone. The bot should reply with the menu within 2 seconds. If nothing arrives, open the Worker's **Observability → Events** in Cloudflare and search `webhook`: a `POST …/webhook` line means Meta reached you (read the error next to it); no line means Meta is not forwarding (app unpublished, or the `messages` field not subscribed). Patients can type `stop` / `berhenti` / `停止提醒` to switch off reminders for their upcoming bookings.
 
 ### Step 5 — Message templates (10 min + approval, usually minutes to a few hours)
 WhatsApp rule: a business may send free-form text only within **24 hours after the patient's last message**. Reminders go out a day later, so they must be approved **templates**. Create these in **WhatsApp Manager → Message templates → Create**, category **Utility**, one per language the clinic uses (Malay = `ms`, English = `en`, Chinese = `zh_CN`). Names must match the env vars.
