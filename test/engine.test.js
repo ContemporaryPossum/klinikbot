@@ -17,9 +17,9 @@ async function chat(phone, text, buttonId) {
 test('BM: book scaling tomorrow afternoon in one message', async () => {
   db.resetPhone(clinic.id, '601');
   let r = await chat('601', 'nak scaling esok petang');
-  assert.match(r.text, /Slot kosong|penuh|Sabtu|Isnin|tutup/i);
-  // find a numbered slot
-  if (/Slot kosong/.test(r.text)) {
+  assert.match(r.text, /Slot kosong|Slot lain yang ada|penuh|Sabtu|Isnin|tutup/i);
+  // find a numbered slot (tomorrow may be a half-day: the bot then offers the other slots of that day)
+  if (/Slot kosong|Slot lain yang ada/.test(r.text)) {
     r = await chat('601', '1');
     assert.match(r.text, /nama/i);
     r = await chat('601', 'Ahmad Faiz');
@@ -183,7 +183,7 @@ test('AI: "boleh buat scaling esok petang?" → AI answers, booking keeps the da
   try {
     const r = await chat('706', 'boleh buat scaling esok petang?');
     assert.match(r.text, /Boleh! Saya bantu tempahkan/);
-    assert.match(r.text, /Slot kosong|penuh|tutup/);           // jumped straight to time selection for tomorrow
+    assert.match(r.text, /Slot kosong|Slot lain yang ada|penuh|tutup/);           // jumped straight to time selection for tomorrow
   } finally { AI.setCompleter(null); }
 });
 
@@ -192,6 +192,7 @@ test('ZH: full booking in Chinese in one message, name in Chinese, confirm with 
   db.resetPhone(clinic.id, '801');
   let r = await chat('801', '我要明天下午洗牙');
   assert.match(r.text, /可预约的时间|已约满|休息/);
+  const afternoonOffered = !/其他可预约/.test(r.text);   // tomorrow may be a half-day with no afternoon slots
   if (/可预约的时间/.test(r.text)) {
     r = await chat('801', '第1个');
     assert.match(r.text, /姓名/);
@@ -201,7 +202,7 @@ test('ZH: full booking in Chinese in one message, name in Chinese, confirm with 
     assert.match(r.text, /预约成功/); assert.match(r.text, /订金/);
     const b = r.events.find(e => e.type === 'booking_created').booking;
     assert.strictEqual(b.name, '陈美玲');
-    assert.ok(Number(b.time.slice(0, 2)) >= 12);           // 下午 → afternoon slot
+    if (afternoonOffered) assert.ok(Number(b.time.slice(0, 2)) >= 12);           // 下午 → afternoon slot
   }
 });
 

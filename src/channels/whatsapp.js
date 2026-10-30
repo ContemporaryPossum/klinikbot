@@ -14,16 +14,45 @@ function configured() {
   return !!(process.env.WHATSAPP_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID);
 }
 
-async function graph(path, body) {
+async function graph(path, body, method = body === undefined ? 'GET' : 'POST') {
   const url = `https://graph.facebook.com/${API_VERSION}/${path}`;
   const res = await fetch(url, {
-    method: 'POST',
+    method,
     headers: { 'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    body: body === undefined ? undefined : JSON.stringify(body),
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(`WhatsApp API ${res.status}: ${JSON.stringify(json)}`);
   return json;
+}
+
+// Setup diagnostics (called from the protected /internal/whatsapp route). Checks the token + phone number, lists the apps
+// subscribed to the WhatsApp Business Account (Meta only delivers webhooks to subscribed apps) and, with subscribe=true,
+// subscribes this app. Never returns the token itself.
+async function diagnose({ wabaId, subscribe = false } = {}) {
+  const pid = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const out = { configured: configured(), phone_number_id: pid || null, waba_id: wabaId || null };
+  const attempt = async (key, fn) => { try { out[key] = await fn(); } catch (e) { out[key] = { error: e.message }; } };
+  if (!out.configured) return out;
+  await attempt('phone', () => graph(`${pid}?fields=id,display_phone_number,verified_name,quality_rating,platform_type,code_verification_status,name_status`));
+  if (!wabaId) {
+    // Resolve the WABA that owns this phone number via the token's business assets, if possible.
+    await attempt('waba_lookup', async () => {
+      const r = await graph(`${pid}?fields=whatsapp_business_account`).catch(() => null);
+      return r && r.whatsapp_business_account ? r.whatsapp_business_account : { note: 'pass ?waba=<WABA_ID> to check subscriptions' };
+    });
+    wabaId = out.waba_lookup && out.waba_lookup.id;
+    out.waba_id = wabaId || null;
+  }
+  if (wabaId) {
+    await attempt('subscribed_apps_before', () => graph(`${wabaId}/subscribed_apps`));
+    if (subscribe) {
+      await attempt('subscribe_result', () => graph(`${wabaId}/subscribed_apps`, {}));
+      await attempt('subscribed_apps_after', () => graph(`${wabaId}/subscribed_apps`));
+    }
+    await attempt('phone_numbers_on_waba', () => graph(`${wabaId}/phone_numbers?fields=id,display_phone_number,verified_name,platform_type`));
+  }
+  return out;
 }
 
 // Meta template language codes for the bot's languages.
@@ -99,4 +128,4 @@ function verify(query) {
   return null;
 }
 
-module.exports = { configured, send, sendTemplate, markRead, parseInbound, verify, normalizePhone, TEMPLATE_LANG };
+module.exports = { configured, send, sendTemplate, markRead, parseInbound, verify, normalizePhone, diagnose, TEMPLATE_LANG };

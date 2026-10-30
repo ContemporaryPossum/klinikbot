@@ -29,6 +29,7 @@ crons = ["* * * * *"]
 CLINIC = "demo-dental"
 WHATSAPP_TEMPLATE_REMINDER_24H = "appt_reminder_24h"
 WHATSAPP_TEMPLATE_REMINDER_2H = "appt_reminder_2h"
+WHATSAPP_WABA_ID = "1806226397249265"
 
 [observability]
 enabled = true

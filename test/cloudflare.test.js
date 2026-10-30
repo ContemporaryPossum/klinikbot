@@ -99,3 +99,21 @@ test('Store registry isolates two clinics running concurrently', async () => {
   assert.deepStrictEqual(a.recentMessages('c', 'p').map(m => m.text), ['A']);
   assert.deepStrictEqual(b.recentMessages('c', 'p').map(m => m.text), ['B']);
 });
+
+test('Router: /internal/whatsapp is token-protected and reports diagnostics without leaking the token', async () => {
+  const db = createStore(fakeSql());
+  const fakeDiag = async ({ wabaId, subscribe }) => ({ configured: true, waba_id: wabaId, subscribed: !!subscribe, phone: { id: '1' } });
+  const { deps: d } = deps(db, { env: { INTERNAL_TOKEN: 't0k' } });
+  d.whatsapp = { ...d.whatsapp, diagnose: fakeDiag };
+  await store.run(db, async () => {
+    let r = await handleRequest(new Request('http://x/internal/whatsapp'), d);
+    assert.strictEqual(r.status, 403);
+    r = await handleRequest(new Request('http://x/internal/whatsapp?waba=123', { headers: { 'x-internal-token': 't0k' } }), d);
+    let j = await r.json();
+    assert.strictEqual(j.waba_id, '123'); assert.strictEqual(j.subscribed, false);
+    r = await handleRequest(new Request('http://x/internal/whatsapp?waba=123&subscribe=1&token=t0k'), d);
+    j = await r.json();
+    assert.strictEqual(j.subscribed, true);
+    assert.ok(!JSON.stringify(j).includes('Bearer'));
+  });
+});

@@ -64,6 +64,16 @@ async function handleRequest(request, deps) {
       return json({ ok: true, sent });
     }
 
+    // --- WhatsApp setup diagnostics (GET = check, POST = check + subscribe this app to the WABA) ---
+    if (p === '/internal/whatsapp' && (method === 'GET' || method === 'POST')) {
+      const tok = deps.env && deps.env.INTERNAL_TOKEN;
+      if (!tok) return text('Set INTERNAL_TOKEN first', 403);
+      if (request.headers.get('x-internal-token') !== tok && url.searchParams.get('token') !== tok) return text('Forbidden', 403);
+      const wabaId = url.searchParams.get('waba') || (deps.env && deps.env.WHATSAPP_WABA_ID) || undefined;
+      const result = whatsapp.diagnose ? await whatsapp.diagnose({ wabaId, subscribe: method === 'POST' || url.searchParams.get('subscribe') === '1' }) : { error: 'diagnose unavailable' };
+      return json(result);
+    }
+
     // --- demo API ---
     if (p === '/api/demo/message' && method === 'POST') {
       const b = await body();
