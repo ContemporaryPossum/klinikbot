@@ -34,12 +34,12 @@ Cloudflare Workers' free plan covers a clinic many times over (100,000 requests 
 **Option A — no terminal (recommended):**
 1. Put this folder in a **private GitHub repo** (github.com → New repository → upload files, or drag the folder in GitHub Desktop).
 2. dash.cloudflare.com → sign up (free) → **Workers & Pages → Create → Import a repository** → pick the repo → leave build command empty, deploy command `npx wrangler deploy` → **Deploy**. First deploy takes ~2 minutes and gives you `https://klinikbot.<your-subdomain>.workers.dev`.
-3. Worker → **Settings → Variables and Secrets** → add:
+3. Worker → **Settings → Variables and Secrets** → add, choosing type **Secret** (not Text) for each — a GitHub deploy deletes dashboard *Text* variables unless `keep_vars = true` is in `wrangler.toml`, but never touches Secrets:
    - `WHATSAPP_VERIFY_TOKEN` (secret) — any long random string you make up
    - `WHATSAPP_TOKEN` (secret) — from Step 3
-   - `WHATSAPP_PHONE_NUMBER_ID` — from Step 2
+   - `WHATSAPP_PHONE_NUMBER_ID` — from Step 2 (or put it in `wrangler.toml` `[vars]`, it is not secret)
    - `ANTHROPIC_API_KEY` (secret) — optional, Step 6
-   - `INTERNAL_TOKEN` (secret) — any random string (protects the reminder endpoint)
+   - `INTERNAL_TOKEN` (secret) — any random string (protects the reminder and diagnostics endpoints)
    - `CLINIC`, `WHATSAPP_TEMPLATE_REMINDER_24H/2H` are already in `wrangler.toml`; override here per clinic if needed.
 4. Open `https://…workers.dev/health` → `{"ok":true,…}`. Open `/` → the demo page. Every push to GitHub redeploys automatically.
 
@@ -68,7 +68,10 @@ App dashboard → **WhatsApp → Configuration → Webhook → Edit**:
 
 **Publish the app (required).** Meta only delivers *test* webhooks while an app is unpublished — real WhatsApp messages (even from your own test numbers) are dropped silently. In the app dashboard: **App settings → Basic** → fill in App domain (`klinikbot.<sub>.workers.dev`), Privacy Policy URL (`https://<your-url>/privacy.html`), Terms of Service URL (`https://<your-url>/terms.html`), Category (Business / Messaging), Save → then click **Publish** at the top of the dashboard. Both legal pages are served by this repo from `public/`; edit them for your company name before going live with clients.
 
-Now WhatsApp "hai" to the test number from your phone. The bot should reply with the menu within 2 seconds. If nothing arrives, open the Worker's **Observability → Events** in Cloudflare and search `webhook`: a `POST …/webhook` line means Meta reached you (read the error next to it); no line means Meta is not forwarding (app unpublished, or the `messages` field not subscribed). Patients can type `stop` / `berhenti` / `停止提醒` to switch off reminders for their upcoming bookings.
+Now WhatsApp "hai" to the test number from your phone. The bot should reply with the menu within 2 seconds. If nothing arrives:
+- Open `https://<your-url>/health` — `"whatsapp":true` means the token and phone number ID are set.
+- Open `https://<your-url>/internal/whatsapp?token=<INTERNAL_TOKEN>` — shows the phone number Meta knows, and `subscribed_apps_before` for the WhatsApp Business Account (`WHATSAPP_WABA_ID`, the "Messaging account ID" on the Try-it-out page). **Meta only delivers webhooks to apps listed there.** If your app is missing, open the same URL with `&subscribe=1` once; it subscribes the app and shows `subscribed_apps_after`.
+- Open the Worker's **Observability → Events** in Cloudflare and search `webhook`: a `POST …/webhook` line means Meta reached you (read the error next to it); no line means Meta is not forwarding (app unpublished, WABA not subscribed, or the `messages` field not subscribed). Patients can type `stop` / `berhenti` / `停止提醒` to switch off reminders for their upcoming bookings.
 
 ### Step 5 — Message templates (10 min + approval, usually minutes to a few hours)
 WhatsApp rule: a business may send free-form text only within **24 hours after the patient's last message**. Reminders go out a day later, so they must be approved **templates**. Create these in **WhatsApp Manager → Message templates → Create**, category **Utility**, one per language the clinic uses (Malay = `ms`, English = `en`, Chinese = `zh_CN`). Names must match the env vars.

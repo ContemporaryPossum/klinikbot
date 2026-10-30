@@ -4,6 +4,8 @@ name = "klinikbot"
 main = "src/worker.js"
 compatibility_date = "2025-10-01"
 compatibility_flags = ["nodejs_compat"]
+# Keep variables added in the dashboard when deploying from GitHub (otherwise each deploy deletes them).
+keep_vars = true
 
 # Serves public/ (the demo page) as static files
 [assets]
@@ -23,12 +25,15 @@ new_sqlite_classes = ["ClinicDO"]
 [triggers]
 crons = ["* * * * *"]
 
-# Plain variables. Secrets (WHATSAPP_TOKEN, ANTHROPIC_API_KEY, WHATSAPP_VERIFY_TOKEN, INTERNAL_TOKEN) go in
-# the dashboard → Settings → Variables & Secrets, or `npx wrangler secret put NAME`.
+# Plain (non-secret) variables. Anything secret — WHATSAPP_TOKEN, ANTHROPIC_API_KEY, WHATSAPP_VERIFY_TOKEN, INTERNAL_TOKEN —
+# must be added in the dashboard as type **Secret** (Settings → Variables & Secrets → Add → Secret) or with
+# `npx wrangler secret put NAME`. Secrets survive deploys; plain "Text" variables added in the dashboard only survive
+# because of keep_vars above.
 [vars]
 CLINIC = "demo-dental"
 WHATSAPP_TEMPLATE_REMINDER_24H = "appt_reminder_24h"
 WHATSAPP_TEMPLATE_REMINDER_2H = "appt_reminder_2h"
+WHATSAPP_PHONE_NUMBER_ID = "1477727868747103"
 WHATSAPP_WABA_ID = "1806226397249265"
 
 [observability]
