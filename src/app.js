@@ -25,6 +25,20 @@ function demoState(deps, phone) {
   };
 }
 
+// One-line description of a Meta webhook payload for the logs (no message bodies).
+function summarizeWebhook(payload) {
+  try {
+    const parts = [];
+    for (const entry of payload.entry || []) for (const ch of entry.changes || []) {
+      const v = ch.value || {};
+      const msgs = (v.messages || []).map(m => `${m.type}:${m.from}`);
+      const sts = (v.statuses || []).map(s => `${s.status}`);
+      parts.push(`${ch.field}${msgs.length ? ' messages=' + msgs.join(',') : ''}${sts.length ? ' statuses=' + sts.join(',') : ''}${v.errors ? ' errors=' + JSON.stringify(v.errors).slice(0, 200) : ''}`);
+    }
+    return parts.join(' | ') || `object=${payload.object || '?'} keys=${Object.keys(payload || {}).join(',')}`;
+  } catch (e) { return 'unparseable'; }
+}
+
 async function handleRequest(request, deps) {
   const { clinic, db, whatsapp, deliverAny, log } = deps;
   const url = new URL(request.url);
@@ -43,12 +57,18 @@ async function handleRequest(request, deps) {
     }
     if (p === '/webhook' && method === 'POST') {
       const payload = await body();
+      const inbound = whatsapp.parseInbound(payload);
+      log.info(`[webhook] inbound=${inbound.length} ${summarizeWebhook(payload)}`);
       const work = (async () => {
-        for (const m of whatsapp.parseInbound(payload)) {
+        for (const m of inbound) {
           try {
             whatsapp.markRead(m.messageId);
             const out = await handle(clinic, m.from, { text: m.text, buttonId: m.buttonId }, { source: 'whatsapp', log });
-            for (const r of out.replies) await whatsapp.send(m.from, r);
+            log.info(`[webhook] from=${m.from} text=${JSON.stringify((m.text || '').slice(0, 60))} replies=${out.replies.length}`);
+            for (const r of out.replies) {
+              const res = await whatsapp.send(m.from, r);
+              log.info(`[webhook] sent to=${m.from} id=${res && res.messages && res.messages[0] ? res.messages[0].id : '?'}`);
+            }
             for (const ev of out.events) log.info(`[event] ${ev.type} ${m.from}`);
           } catch (e) { log.error('[webhook]', e && e.message || e); }
         }
