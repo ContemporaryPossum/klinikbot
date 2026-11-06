@@ -45,6 +45,8 @@ async function diagnose({ wabaId, subscribe = false } = {}) {
     out.waba_id = wabaId || null;
   }
   if (wabaId) {
+    // Account standing: business verification, Meta's account review, and whether the number may send right now.
+    await attempt('account', () => graph(`${wabaId}?fields=id,name,account_review_status,business_verification_status,ownership_type,health_status`));
     await attempt('subscribed_apps_before', () => graph(`${wabaId}/subscribed_apps`));
     if (subscribe) {
       await attempt('subscribe_result', () => graph(`${wabaId}/subscribed_apps`, {}));
