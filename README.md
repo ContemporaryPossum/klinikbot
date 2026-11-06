@@ -94,7 +94,7 @@ Create an API key in the Claude Console (console.anthropic.com) → set `ANTHROP
 5. Set the clinic's display name and profile photo under **Phone numbers → Profile**.
 
 ### Step 8 — Hand-over checklist
-- Patient books on WhatsApp → appears in the clinic's dashboard at `https://<url>/`.
+- Patient books on WhatsApp → appears in the clinic's dashboard at `https://<url>/?token=<INTERNAL_TOKEN>` (the token is remembered by the browser tab; without it the same page is the public demo and shows demo bookings only, never real patients).
 - Next-day reminder arrives as a template with 3 buttons; tapping "Yes" marks the booking patient-confirmed.
 - "cakap dengan staf" pauses the bot for 60 min and (if you forward `handoff` events) alerts `staff_whatsapp`.
 - Clinic knows: type `menu` to bring the bot back for a patient; deposits are checked manually from the receipt screenshot.

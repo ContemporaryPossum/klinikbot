@@ -1542,7 +1542,16 @@ window.KB = { clinic: {"id":"demo-dental","name":{"ms":"Klinik Pergigian Sinar",
   let lang = 'ms', clinic = null, busy = false;
 
   // ---------- API adapter: talks to the server, or runs the engine locally in the browser (standalone build) ----------
-  const j = (url, body) => fetch(url, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : undefined).then(r => r.json());
+  // Clinic dashboard mode: open the page as /?token=<INTERNAL_TOKEN> to see real WhatsApp bookings too (kept in
+  // sessionStorage so the token leaves the address bar). Without it the page is the public demo and only shows demo data.
+  let dashToken = '';
+  try {
+    const qs = new URLSearchParams(location.search);
+    if (qs.get('token')) { sessionStorage.setItem('kb_token', qs.get('token')); history.replaceState(null, '', location.pathname); }
+    dashToken = sessionStorage.getItem('kb_token') || '';
+  } catch (e) { /* storage unavailable */ }
+  const hdrs = () => Object.assign({ 'Content-Type': 'application/json' }, dashToken ? { 'x-internal-token': dashToken } : {});
+  const j = (url, body) => fetch(url, body ? { method: 'POST', headers: hdrs(), body: JSON.stringify(body) } : { headers: hdrs() }).then(r => r.json());
   const remoteApi = {
     message: (p) => j('/api/demo/message', p),
     state: (ph) => j(`/api/demo/state?phone=${encodeURIComponent(ph)}`),
@@ -1640,7 +1649,7 @@ window.KB = { clinic: {"id":"demo-dental","name":{"ms":"Klinik Pergigian Sinar",
     if (!window.KB && typeof st.ai === 'boolean') { $('#aiPill').classList.toggle('off', !st.ai); $('#aiLabel').textContent = st.ai ? 'AI answers: on (Claude)' : 'AI answers: off · set ANTHROPIC_API_KEY'; }
     $('#clinicName').textContent = clinic.name[lang] || clinic.name.en;
     $('#clinicStatus').textContent = STATUS[lang] || STATUS.en;
-    $('#dashName').textContent = clinic.short_name;
+    $('#dashName').textContent = clinic.short_name + (st.mode === 'dashboard' ? ' · live (WhatsApp + demo)' : ' · demo data only');
     $('#avatar').textContent = clinic.short_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
     $('#sToday').textContent = st.stats.today; $('#sWeek').textContent = st.stats.this_week; $('#sConf').textContent = st.stats.confirmed_by_patient;
     const rows = st.bookings;

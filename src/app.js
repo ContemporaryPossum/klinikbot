@@ -11,17 +11,41 @@ function json(body, status = 200) {
 }
 function text(body, status = 200) { return new Response(body, { status, headers: { 'content-type': 'text/plain; charset=utf-8' } }); }
 
-function demoState(deps, phone) {
+// The demo page and the clinic dashboard share one database with the real WhatsApp line. Without the internal token a
+// caller is in DEMO mode: it may only use demo identities (anything that is not a phone number, e.g. "web1") and only
+// sees demo-sourced bookings. With the token (header x-internal-token or ?token=) it is the clinic's dashboard and sees
+// everything, including WhatsApp bookings, and may mark them done / no-show or resend a reminder.
+const isRealPhone = (p) => /^\d{8,15}$/.test(String(p || ''));
+function isAdmin(request, url, deps) {
+  const tok = deps.env && deps.env.INTERNAL_TOKEN;
+  return !!tok && (request.headers.get('x-internal-token') === tok || url.searchParams.get('token') === tok);
+}
+
+function demoState(deps, phone, admin = false) {
   const { clinic, db } = deps;
   const today = S.todayStr(clinic);
+  let bookings = db.listBookings(clinic.id, admin ? 200 : 40);
+  let stats = db.stats(clinic.id, today, S.startOfWeek(today));
+  if (!admin) {
+    bookings = bookings.filter(b => b.source === 'demo' || !isRealPhone(b.phone));
+    const weekStart = S.startOfWeek(today);
+    stats = {
+      today: bookings.filter(b => b.date === today && b.status === 'confirmed').length,
+      this_week: bookings.filter(b => b.date >= weekStart && b.status === 'confirmed').length,
+      confirmed_by_patient: bookings.filter(b => b.status === 'confirmed' && b.patient_confirmed).length,
+      total: bookings.length,
+    };
+  }
+  const showPhone = phone && (admin || !isRealPhone(phone));
   return {
     clinic: { id: clinic.id, name: clinic.name, short_name: clinic.short_name, address: clinic.address, services: clinic.services, hours: clinic.hours, default_language: clinic.default_language, deposit: clinic.deposit, reminders: clinic.reminders, ai: { persona: (clinic.ai || {}).persona } },
     ai: AI.available(),
+    mode: admin ? 'dashboard' : 'demo',
     today, now: S.localParts(new Date(), clinic.timezone).timeStr,
-    messages: phone ? db.recentMessages(clinic.id, phone, 100) : [],
-    bookings: db.listBookings(clinic.id, 40),
-    stats: db.stats(clinic.id, today, S.startOfWeek(today)),
-    conversation: phone ? db.getConversation(clinic.id, phone) : null,
+    messages: showPhone ? db.recentMessages(clinic.id, phone, 100) : [],
+    bookings,
+    stats,
+    conversation: showPhone ? db.getConversation(clinic.id, phone) : null,
   };
 }
 
@@ -104,34 +128,41 @@ async function handleRequest(request, deps) {
       return json(result);
     }
 
-    // --- demo API ---
+    // --- demo API / clinic dashboard API (see demoState for the demo-vs-dashboard rule) ---
+    const admin = isAdmin(request, url, deps);
+    const demoOnly = (phone) => !admin && isRealPhone(phone);   // a real patient's number without the token
     if (p === '/api/demo/message' && method === 'POST') {
       const b = await body();
       const phone = String(b.phone || 'demo');
+      if (demoOnly(phone)) return json({ error: 'Demo identities only. Use a name like "web1", not a phone number.' }, 403);
       const out = await handle(clinic, phone, { text: b.text, buttonId: b.buttonId }, { source: 'demo', log });
       for (const ev of out.events) log.info(`[event] ${ev.type} ${phone}`);
-      return json({ replies: out.replies, events: out.events, state: demoState(deps, phone) });
+      return json({ replies: out.replies, events: out.events, state: demoState(deps, phone, admin) });
     }
-    if (p === '/api/demo/state' && method === 'GET') return json(demoState(deps, url.searchParams.get('phone')));
+    if (p === '/api/demo/state' && method === 'GET') return json(demoState(deps, url.searchParams.get('phone'), admin));
     if (p === '/api/demo/reminder' && method === 'POST') {
       const b = await body();
       const bk = db.getBooking(Number(b.booking_id));
       if (!bk) return json({ error: 'booking not found' }, 404);
+      if (demoOnly(bk.phone)) return json({ error: 'Dashboard token required to message a real patient.' }, 403);
       const msg = await reminders.sendReminder(clinic, bk, Number(b.hours || 24), deliverAny, log);
-      return json({ sent: msg, state: demoState(deps, bk.phone) });
+      return json({ sent: msg, state: demoState(deps, bk.phone, admin) });
     }
     if (p === '/api/demo/reset' && method === 'POST') {
       const b = await body();
-      db.resetPhone(clinic.id, String(b.phone || 'demo'));
-      return json({ ok: true, state: demoState(deps, String(b.phone || 'demo')) });
+      const phone = String(b.phone || 'demo');
+      if (demoOnly(phone)) return json({ error: 'Dashboard token required to reset a real patient.' }, 403);
+      db.resetPhone(clinic.id, phone);
+      return json({ ok: true, state: demoState(deps, phone, admin) });
     }
     if (p === '/api/demo/booking' && method === 'POST') {
       const b = await body();
       const bk = db.getBooking(Number(b.booking_id));
       if (!bk) return json({ error: 'booking not found' }, 404);
+      if (demoOnly(bk.phone)) return json({ error: 'Dashboard token required to change a real booking.' }, 403);
       if (['completed', 'no_show', 'cancelled', 'confirmed'].includes(b.status)) bk.status = b.status;
       db.updateBooking(bk);
-      return json({ ok: true, state: demoState(deps, bk.phone) });
+      return json({ ok: true, state: demoState(deps, bk.phone, admin) });
     }
 
     if (method === 'GET') return (await deps.serveStatic(p.slice(1))) || text('Not found', 404);

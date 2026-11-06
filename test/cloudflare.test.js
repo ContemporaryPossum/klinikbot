@@ -151,3 +151,41 @@ test('Template definitions: 2 names x 3 languages, 5 body params each, 3 quick r
     else assert.strictEqual(btns, undefined);
   }
 });
+
+test('Demo API never exposes or touches real WhatsApp patients without the dashboard token', async () => {
+  const db = createStore(fakeSql());
+  const { sent, deps: d } = deps(db, { env: { INTERNAL_TOKEN: 't0k' } });
+  await store.run(db, async () => {
+    // a real patient books over WhatsApp
+    const payload = (text) => ({ entry: [{ changes: [{ value: { contacts: [{ profile: { name: 'Ali' } }], messages: [{ from: '60123456789', id: 'wamid.' + text, type: 'text', text: { body: text } }] } }] }] });
+    await handleRequest(post('/webhook', payload('book a filling next monday 3pm')), d);
+    await handleRequest(post('/webhook', payload('Ali Hassan')), d);
+    await handleRequest(post('/webhook', payload('yes')), d);
+    const real = db.listBookings(clinic.id).find(b => b.phone === '60123456789');
+    assert.ok(real, 'WhatsApp booking exists');
+    // public demo: cannot see it, cannot act on it, cannot impersonate the number
+    let r = await handleRequest(new Request('http://x/api/demo/state?phone=60123456789'), d);
+    let st = await r.json();
+    assert.strictEqual(st.mode, 'demo');
+    assert.ok(!st.bookings.some(b => b.phone === '60123456789'), 'real booking hidden from demo');
+    assert.deepStrictEqual(st.messages, []); assert.strictEqual(st.conversation, null);
+    assert.strictEqual(st.stats.total, 0);
+    r = await handleRequest(post('/api/demo/message', { phone: '60123456789', text: 'cancel' }), d); assert.strictEqual(r.status, 403);
+    r = await handleRequest(post('/api/demo/reset', { phone: '60123456789' }), d); assert.strictEqual(r.status, 403);
+    r = await handleRequest(post('/api/demo/booking', { booking_id: real.id, status: 'cancelled' }), d); assert.strictEqual(r.status, 403);
+    const before = sent.length;
+    r = await handleRequest(post('/api/demo/reminder', { booking_id: real.id, hours: 24 }), d); assert.strictEqual(r.status, 403);
+    assert.strictEqual(sent.length, before, 'no WhatsApp message triggered');
+    assert.strictEqual(db.getBooking(real.id).status, 'confirmed');
+    // demo identities still work normally
+    r = await handleRequest(post('/api/demo/message', { phone: 'web9', text: 'hello' }), d); assert.strictEqual(r.status, 200);
+    // dashboard token sees and manages everything
+    r = await handleRequest(new Request('http://x/api/demo/state?token=t0k'), d);
+    st = await r.json();
+    assert.strictEqual(st.mode, 'dashboard');
+    assert.ok(st.bookings.some(b => b.phone === '60123456789'));
+    r = await handleRequest(new Request('http://x/api/demo/booking', { method: 'POST', headers: { 'content-type': 'application/json', 'x-internal-token': 't0k' }, body: JSON.stringify({ booking_id: real.id, status: 'completed' }) }), d);
+    assert.strictEqual((await r.json()).ok, true);
+    assert.strictEqual(db.getBooking(real.id).status, 'completed');
+  });
+});
