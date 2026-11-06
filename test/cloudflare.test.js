@@ -117,3 +117,37 @@ test('Router: /internal/whatsapp is token-protected and reports diagnostics with
     assert.ok(!JSON.stringify(j).includes('Bearer'));
   });
 });
+
+test('Router: /internal/templates is token-protected and reports wanted/approved/missing', async () => {
+  const db = createStore(fakeSql());
+  const fakeManage = async ({ wabaId, create }) => ({ waba_id: wabaId, created: create ? ['x'] : [], approved: [], missing_or_pending: ['appt_reminder_24h/ms'] });
+  const { deps: d } = deps(db, { env: { INTERNAL_TOKEN: 't0k', WHATSAPP_WABA_ID: '999' } });
+  d.whatsapp = { ...d.whatsapp, manageTemplates: fakeManage };
+  await store.run(db, async () => {
+    let r = await handleRequest(new Request('http://x/internal/templates'), d);
+    assert.strictEqual(r.status, 403);
+    r = await handleRequest(new Request('http://x/internal/templates?token=t0k'), d);
+    let j = await r.json();
+    assert.strictEqual(j.waba_id, '999'); assert.deepStrictEqual(j.created, []);
+    r = await handleRequest(new Request('http://x/internal/templates?token=t0k&create=1'), d);
+    j = await r.json();
+    assert.deepStrictEqual(j.created, ['x']);
+  });
+});
+
+test('Template definitions: 2 names x 3 languages, 5 body params each, 3 quick replies on the 24h one', () => {
+  const { defs } = require('../src/channels/templates');
+  const all = defs();
+  assert.strictEqual(all.length, 6);
+  for (const t of all) {
+    const body = t.components.find(c => c.type === 'BODY');
+    const params = (body.text.match(/\{\{\d\}\}/g) || []);
+    assert.deepStrictEqual(params, ['{{1}}', '{{2}}', '{{3}}', '{{4}}', '{{5}}']);
+    assert.strictEqual(body.example.body_text[0].length, 5);
+    assert.ok(!/^\{\{|\}\}$/.test(body.text.trim()), 'body must not start or end with a variable');
+    assert.ok(!/\}\}\s*\{\{/.test(body.text), 'no adjacent variables');
+    const btns = t.components.find(c => c.type === 'BUTTONS');
+    if (t.name === 'appt_reminder_24h') { assert.strictEqual(btns.buttons.length, 3); for (const b of btns.buttons) assert.ok(b.text.length <= 25); }
+    else assert.strictEqual(btns, undefined);
+  }
+});

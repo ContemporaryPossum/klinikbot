@@ -281,3 +281,26 @@ test('Opt-out: "stop" switches off reminders for upcoming bookings (BM/EN/ZH)', 
   r = await chat('692', 'berhenti');
   assert.match(r.text, /dimatikan/);
 });
+
+test('Reminders: one failing booking does not block the others, and failures back off', async () => {
+  const R = require('../src/reminders');
+  db.resetPhone(clinic.id, '771'); db.resetPhone(clinic.id, '772');
+  const a = db.createBooking({ clinic_id: clinic.id, phone: '771', name: 'Fail Case', service_id: 'checkup', date: '2032-05-04', time: '10:00', duration: 30, source: 'test' });
+  const b = db.createBooking({ clinic_id: clinic.id, phone: '772', name: 'Ok Case', service_id: 'checkup', date: '2032-05-04', time: '10:00', duration: 30, source: 'test' });
+  const now = S.toInstant('2032-05-03', '10:30', clinic.timezone);   // inside the 24h window, outside the 2h window
+  let calls = 0;
+  const deliver = async (phone) => { calls++; if (phone === '771') throw new Error('(#131031) Business Account locked'); };
+  let sent = await R.runOnce(clinic, deliver, { info() {}, error() {} }, now);
+  assert.deepStrictEqual(sent.map(s => s.booking_id), [b.id]);
+  assert.strictEqual(sent.failed.length, 1);
+  assert.deepStrictEqual(db.getBooking(b.id).reminders_sent, [24]);
+  assert.deepStrictEqual(db.getBooking(a.id).reminders_sent, []);
+  // one minute later: the failed one is not retried yet (10-minute back-off)
+  calls = 0;
+  sent = await R.runOnce(clinic, deliver, { info() {}, error() {} }, new Date(now.getTime() + 60000));
+  assert.strictEqual(calls, 0);
+  // eleven minutes later: retried once
+  sent = await R.runOnce(clinic, deliver, { info() {}, error() {} }, new Date(now.getTime() + 11 * 60000));
+  assert.strictEqual(calls, 1);
+  R._failures.clear();
+});

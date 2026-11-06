@@ -94,6 +94,16 @@ async function handleRequest(request, deps) {
       return json(result);
     }
 
+    // --- WhatsApp template management (GET = list + status, ?create=1 or POST = submit missing reminder templates) ---
+    if (p === '/internal/templates' && (method === 'GET' || method === 'POST')) {
+      const tok = deps.env && deps.env.INTERNAL_TOKEN;
+      if (!tok) return text('Set INTERNAL_TOKEN first', 403);
+      if (request.headers.get('x-internal-token') !== tok && url.searchParams.get('token') !== tok) return text('Forbidden', 403);
+      const wabaId = url.searchParams.get('waba') || (deps.env && deps.env.WHATSAPP_WABA_ID) || undefined;
+      const result = whatsapp.manageTemplates ? await whatsapp.manageTemplates({ wabaId, create: method === 'POST' || url.searchParams.get('create') === '1' }) : { error: 'unavailable' };
+      return json(result);
+    }
+
     // --- demo API ---
     if (p === '/api/demo/message' && method === 'POST') {
       const b = await body();

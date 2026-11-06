@@ -11,10 +11,16 @@ function start(clinic, deliver, { intervalMs = 60000, log = console } = {}) {
   return () => clearInterval(timer);
 }
 
+// A reminder that fails to send (template not approved yet, account blocked, network) is retried, but not every
+// minute: 10 minutes between attempts per booking+reminder, and never more than 12 attempts. One failure never
+// stops the other bookings' reminders.
+const RETRY_MS = 10 * 60000, MAX_ATTEMPTS = 12;
+const failures = new Map(); // `${booking.id}:${hours}` -> { at, attempts, error }
+
 async function runOnce(clinic, deliver, log = console, nowInstant = new Date()) {
   const today = S.todayStr(clinic, nowInstant);
   const hoursList = (clinic.reminders && clinic.reminders.hours_before) || [24, 2];
-  const sent = [];
+  const sent = [], failed = [];
   for (const b of db.allUpcoming(clinic.id, today)) {
     const start = S.toInstant(b.date, b.time, clinic.timezone);
     const msUntil = start.getTime() - nowInstant.getTime();
@@ -22,12 +28,22 @@ async function runOnce(clinic, deliver, log = console, nowInstant = new Date()) 
     for (const h of hoursList) {
       if (b.reminders_sent.includes(h)) continue;
       if (msUntil > h * 3600000) continue;
-      // Skip the shorter reminder if the longer one was never sent and would be due at the same moment (booking made last-minute)
-      await sendReminder(clinic, b, h, deliver, log);
-      sent.push({ booking_id: b.id, hours: h });
+      const key = `${b.id}:${h}`;
+      const f = failures.get(key);
+      if (f && (f.attempts >= MAX_ATTEMPTS || nowInstant.getTime() - f.at < RETRY_MS)) continue;
+      try {
+        await sendReminder(clinic, b, h, deliver, log);
+        failures.delete(key);
+        sent.push({ booking_id: b.id, hours: h });
+      } catch (e) {
+        const attempts = (f ? f.attempts : 0) + 1;
+        failures.set(key, { at: nowInstant.getTime(), attempts, error: e.message });
+        failed.push({ booking_id: b.id, hours: h, attempts, error: e.message });
+        log.error && log.error(`[reminders] ${h}h reminder for booking #${b.id} failed (attempt ${attempts}): ${e.message}`);
+      }
     }
   }
-  return sent;
+  return failed.length ? Object.assign(sent, { failed }) : sent;
 }
 
 async function sendReminder(clinic, booking, hours, deliver, log = console) {
@@ -39,4 +55,4 @@ async function sendReminder(clinic, booking, hours, deliver, log = console) {
   return msg;
 }
 
-module.exports = { start, runOnce, sendReminder };
+module.exports = { start, runOnce, sendReminder, _failures: failures };

@@ -73,30 +73,15 @@ Now WhatsApp "hai" to the test number from your phone. The bot should reply with
 - Open `https://<your-url>/internal/whatsapp?token=<INTERNAL_TOKEN>` — shows the phone number Meta knows, and `subscribed_apps_before` for the WhatsApp Business Account (`WHATSAPP_WABA_ID`, the "Messaging account ID" on the Try-it-out page). **Meta only delivers webhooks to apps listed there.** If your app is missing, open the same URL with `&subscribe=1` once; it subscribes the app and shows `subscribed_apps_after`.
 - Open the Worker's **Observability → Events** in Cloudflare and search `webhook`: a `POST …/webhook` line means Meta reached you (read the error next to it); no line means Meta is not forwarding (app unpublished, WABA not subscribed, or the `messages` field not subscribed). Patients can type `stop` / `berhenti` / `停止提醒` to switch off reminders for their upcoming bookings.
 
-### Step 5 — Message templates (10 min + approval, usually minutes to a few hours)
-WhatsApp rule: a business may send free-form text only within **24 hours after the patient's last message**. Reminders go out a day later, so they must be approved **templates**. Create these in **WhatsApp Manager → Message templates → Create**, category **Utility**, one per language the clinic uses (Malay = `ms`, English = `en`, Chinese = `zh_CN`). Names must match the env vars.
+### Step 5 — Message templates (2 min + Meta approval, usually minutes to a few hours)
+WhatsApp rule: a business may send free-form text only within **24 hours after the patient's last message**. Reminders go out a day later, so they must be approved **templates**. The bot ships with its own definitions (`src/channels/templates.js`: `appt_reminder_24h` with 3 quick-reply buttons and `appt_reminder_2h`, each in Malay `ms`, English `en` and Chinese `zh_CN`) and can submit them for you:
 
-**Template `appt_reminder_24h`** — body (English version; translate for ms / zh_CN keeping the same {{n}} order):
-```
-Hi {{1}}, reminder of your appointment at {{2}} on {{3}} at {{4}} for {{5}}. Can you make it?
-```
-Sample values for review: `Sarah Lim` · `Klinik Sinar` · `Tomorrow (Thu, 29 Oct)` · `2pm` · `Check-up & Scaling`
-Buttons → **Quick reply** ×3, in this order, with these payloads (the bot reads the payload):
-1. `Yes, I'll be there` — payload `rem_yes`
-2. `Reschedule` — payload `rem_resched`
-3. `Cancel` — payload `rem_cancel`
+- Check status: `https://<your-url>/internal/templates?token=<INTERNAL_TOKEN>` → `existing` with each template's `status`, plus `approved` / `missing_or_pending`.
+- Submit the missing ones once: add `&create=1`. Re-running is safe; existing name+language pairs are skipped.
 
-Malay body: `Hai {{1}}, peringatan temujanji anda di {{2}} pada {{3}} jam {{4}} untuk {{5}}. Boleh datang?` Buttons: `Ya, saya datang` / `Tukar masa` / `Batal`.
-Chinese body: `{{1}}您好，提醒您在{{2}}的预约：{{3}} {{4}}，项目：{{5}}。请问能准时到吗？` Buttons: `可以，我会到` / `更改时间` / `取消`.
+Quick-reply payloads (`rem_yes` / `rem_resched` / `rem_cancel`) are attached when the bot sends, so nothing is configured on the buttons in Meta. To edit wording, change `templates.js`, delete the old template in WhatsApp Manager → Message templates, and submit again. Manual creation in WhatsApp Manager works too, as long as names, languages, parameter order and button order match.
 
-**Template `appt_reminder_2h`** — body, no buttons:
-```
-Hi {{1}}, your appointment at {{2}} is in {{3}} hours ({{4}}). Address: {{5}}. See you soon!
-```
-Malay: `Hai {{1}}, temujanji anda di {{2}} adalah dalam {{3}} jam lagi ({{4}}). Alamat: {{5}}. Jumpa nanti!`
-Chinese: `{{1}}您好，您在{{2}}的预约还有{{3}}小时（{{4}}）。地址：{{5}}。到时见！`
-
-Until templates are approved, the bot still works for everything inside the 24h window (booking, questions, same-day changes); only the next-day reminder would fail, and the log will show the Meta error.
+Until templates are approved, the bot still works for everything inside the 24h window (booking, questions, same-day changes); a reminder that cannot be sent is retried every 10 minutes (up to 12 times) and the log shows the Meta error. Reminders are *business-initiated* messages, so a production number also needs a **payment method** on the WhatsApp account (WhatsApp Manager → Payment settings); the free test number does not.
 
 ### Step 6 — AI answers (2 min)
 Create an API key in the Claude Console (console.anthropic.com) → set `ANTHROPIC_API_KEY` → redeploy. `/health` shows `"ai":true`. Without it, unknown questions get the scripted menu.

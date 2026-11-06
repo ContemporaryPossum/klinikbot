@@ -57,6 +57,40 @@ async function diagnose({ wabaId, subscribe = false } = {}) {
   return out;
 }
 
+// Template management (protected /internal/templates route). Lists the WABA's templates with their review status and,
+// with create=true, submits any of the bot's reminder templates (see templates.js) that do not exist yet. Idempotent:
+// an existing name+language pair is left alone, so it is safe to run repeatedly.
+async function manageTemplates({ wabaId, create = false } = {}) {
+  const out = { waba_id: wabaId || null, wanted: [], created: [], skipped: [], errors: [] };
+  if (!wabaId) { out.errors.push('WHATSAPP_WABA_ID not set'); return out; }
+  const names = {
+    reminder_24h: process.env.WHATSAPP_TEMPLATE_REMINDER_24H || 'appt_reminder_24h',
+    reminder_2h: process.env.WHATSAPP_TEMPLATE_REMINDER_2H || 'appt_reminder_2h',
+  };
+  const wanted = require('./templates').defs(names);
+  out.wanted = wanted.map(t => `${t.name}/${t.language}`);
+  const list = async () => {
+    const r = await graph(`${wabaId}/message_templates?fields=name,language,status,category,rejected_reason,quality_score&limit=100`);
+    return (r.data || []).map(t => ({ name: t.name, language: t.language, status: t.status, category: t.category, rejected_reason: t.rejected_reason || null }));
+  };
+  try { out.existing = await list(); } catch (e) { out.errors.push(`list: ${e.message}`); return out; }
+  if (create) {
+    for (const t of wanted) {
+      const have = out.existing.find(e => e.name === t.name && e.language === t.language);
+      if (have) { out.skipped.push(`${t.name}/${t.language} (${have.status})`); continue; }
+      try {
+        const r = await graph(`${wabaId}/message_templates`, { name: t.name, language: t.language, category: t.category, allow_category_change: true, components: t.components });
+        out.created.push({ name: t.name, language: t.language, id: r.id, status: r.status, category: r.category });
+      } catch (e) { out.errors.push(`${t.name}/${t.language}: ${e.message}`); }
+    }
+    try { out.existing = await list(); } catch (e) { out.errors.push(`relist: ${e.message}`); }
+  }
+  const required = new Set(out.wanted);
+  out.approved = out.existing.filter(e => required.has(`${e.name}/${e.language}`) && e.status === 'APPROVED').map(e => `${e.name}/${e.language}`);
+  out.missing_or_pending = out.wanted.filter(w => !out.approved.includes(w));
+  return out;
+}
+
 // Meta template language codes for the bot's languages.
 const TEMPLATE_LANG = { ms: 'ms', en: 'en', zh: 'zh_CN' };
 
@@ -130,4 +164,4 @@ function verify(query) {
   return null;
 }
 
-module.exports = { configured, send, sendTemplate, markRead, parseInbound, verify, normalizePhone, diagnose, TEMPLATE_LANG };
+module.exports = { configured, send, sendTemplate, markRead, parseInbound, verify, normalizePhone, diagnose, manageTemplates, TEMPLATE_LANG };
