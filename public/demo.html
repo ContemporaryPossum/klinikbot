@@ -112,7 +112,7 @@
   <div class="controls">
     <div class="seg" id="langSeg"><button data-lang="ms" class="on">BM</button><button data-lang="en">EN</button><button data-lang="zh">中文</button></div>
     <button class="btn ghost" id="resetBtn">Reset demo</button>
-    <span class="live" id="aiPill" title="Free-text questions are answered by Claude using the clinic's own info"><i></i> <span id="aiLabel">AI answers: connecting…</span></span>
+    <span class="live" id="aiPill" title="Free-text questions are answered by AI using the clinic's own info"><i></i> <span id="aiLabel">AI answers: connecting…</span></span>
   </div>
 </div>
 
@@ -152,7 +152,7 @@
     <div class="card">
       <h3>What the clinic gets</h3>
       <div class="why">
-        <div><b>Answers like a human</b>Claude answers real questions — "scaling sakit tak?", "ada parking?", "洗牙会痛吗？" — in BM, English, Manglish or Chinese, using only the clinic's own info. Never diagnoses; passes to staff when unsure.</div>
+        <div><b>Answers like a human</b>The AI answers real questions — "scaling sakit tak?", "ada parking?", "洗牙会痛吗？" — in BM, English, Manglish or Chinese, using only the clinic's own info. Never diagnoses; passes to staff when unsure.</div>
         <div><b>Zero missed enquiries</b>Replies in seconds, 24 hours a day, in three languages. Patients book without anyone picking up the phone.</div>
         <div><b>Fewer no-shows</b>Automatic reminders 24h and 2h before, with one-tap confirm. Optional RM50 deposit via DuitNow to lock the slot.</div>
         <div><b>No double-bookings</b>The bot only offers slots that are actually free. Reschedules and cancellations free the slot instantly.</div>
@@ -160,7 +160,7 @@
     </div>
   </div>
 </div>
-<div class="foot">Demo clinic data is fictional. Works with the official WhatsApp Business Platform (Meta Cloud API). Built on Claude Code.</div>
+<div class="foot">Demo clinic data is fictional. Works with the official WhatsApp Business Platform (Meta Cloud API).</div>
 <div class="toasts" id="toasts"></div>
 
 <script>
@@ -210,7 +210,7 @@
             throw e;
           }
         });
-        label.textContent = 'AI answers: on (Claude)';
+        label.textContent = 'AI answers: on';
       } catch (e) { off(); }
     })();
     const state = (ph) => { const today = S.todayStr(C); return { clinic: C, today, now: S.localParts(new Date(), C.timezone).timeStr, messages: ph ? db.recentMessages(C.id, ph, 100) : [], bookings: db.listBookings(C.id, 40), stats: db.stats(C.id, today, S.startOfWeek(today)), conversation: ph ? db.getConversation(C.id, ph) : null }; };
@@ -277,7 +277,7 @@
   const fmtTime = t => { const [h, m] = t.split(':').map(Number); const h12 = h % 12 || 12; return `${h12}${m ? '.' + String(m).padStart(2, '0') : ''}${h >= 12 ? 'pm' : 'am'}`; };
   function renderState(st) {
     clinic = st.clinic;
-    if (!window.KB && typeof st.ai === 'boolean') { $('#aiPill').classList.toggle('off', !st.ai); $('#aiLabel').textContent = st.ai ? 'AI answers: on (Claude)' : 'AI answers: off · set ANTHROPIC_API_KEY'; }
+    if (!window.KB && typeof st.ai === 'boolean') { $('#aiPill').classList.toggle('off', !st.ai); $('#aiLabel').textContent = st.ai ? 'AI answers: on' : 'AI answers: off'; }
     $('#clinicName').textContent = clinic.name[lang] || clinic.name.en;
     $('#clinicStatus').textContent = STATUS[lang] || STATUS.en;
     $('#dashName').textContent = clinic.short_name + (st.mode === 'dashboard' ? ' · live (WhatsApp + demo)' : ' · demo data only');
@@ -315,7 +315,7 @@
         if (ev.type === 'booking_cancelled') toast(`⚪ <b>Booking #${ev.booking.id} cancelled</b> — slot is free again.`);
         if (ev.type === 'handoff') toast(`👩‍⚕️ <b>Staff alert</b> — patient asked for a human. Bot paused for this chat; clinic notified.`);
         if (ev.type === 'patient_confirmed') toast(`✅ <b>Patient confirmed</b> attendance for booking #${ev.booking.id}.`);
-        if (ev.type === 'ai_answered') toast(`🤖 <b>Claude answered</b> a free-text question using the clinic's own info. Bookings still go through the script.`);
+        if (ev.type === 'ai_answered') toast(`🤖 <b>AI answered</b> a free-text question using the clinic's own info. Bookings still go through the script.`);
       }
     } catch (e) { addMsg('in', '⚠️ ' + (e && e.message || e)); }
     finally { busy = false; }
