@@ -236,8 +236,9 @@ function advanceBooking(ctx) {
     const slots = slotsFor(clinic, d.date, s.duration);
     if (!slots.length) {
       const alts = openDatesWithSlots(clinic, S.addDays(d.date, 1), s.duration, 3);
+      const asked = d.date;   // keep it for the message; the patient asked for a closed or fully booked day
       d.dateOptions = alts; d.date = null; conv.step = 'book_date';
-      say(L.noSlots(d.date, today, alts)); return finish(ctx);
+      say(S.isOpen(clinic, asked) ? L.noSlots(asked, today, alts) : L.closedOn(asked, today, alts)); return finish(ctx);
     }
     // apply a time hint from the original message
     if (d.timeHint) {

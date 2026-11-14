@@ -304,3 +304,17 @@ test('Reminders: one failing booking does not block the others, and failures bac
   assert.strictEqual(calls, 1);
   R._failures.clear();
 });
+
+test('Asking for a closed day in one message offers the next open days instead of crashing', async () => {
+  // find the next Sunday (clinic closed) from today, in the clinic's timezone
+  let d = S.todayStr(clinic); for (let i = 0; i < 8 && S.isOpen(clinic, d); i++) d = S.addDays(d, 1);
+  assert.ok(!S.isOpen(clinic, d));
+  const [y, m, day] = d.split('-');
+  db.resetPhone(clinic.id, '781');
+  const r = await chat('781', `nak scaling ${Number(day)}/${Number(m)}`);
+  assert.match(r.text, /tutup|Hari terdekat/i);
+  assert.match(r.text, /\*1\*/);
+  db.resetPhone(clinic.id, '782');
+  const z = await chat('782', `我要洗牙 ${Number(m)}月${Number(day)}日`);
+  assert.match(z.text, /休息|\*1\*/);
+});
